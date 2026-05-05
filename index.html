@@ -347,6 +347,8 @@ footer{padding:24px 40px;border-top:1px solid var(--border);display:flex;justify
   .section-title{font-size:30px}
 }
 </style>
+<div id="fb-root"></div>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v20.0"></script>
 </head>
 <body>
 
@@ -711,907 +713,515 @@ const _origHideGate = typeof hideGate === 'function' ? hideGate : null;
   <h1 class="bebas">WALA KA NANG MAISIP<br><span>I-POST?</span></h1>
 </section>
 
-<!-- VIRAL TRENDS + YOUTUBE -->
+<!-- VIRAL TRENDS -->
 <section class="yt-section" id="trends">
-  <div class="yt-inner">
-    <div style="text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px">
-      <svg width="44" height="32" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.54 2.5C21.29 1.56 20.55 0.82 19.61 0.57C17.88 0.1 11 0.1 11 0.1C11 0.1 4.12 0.1 2.39 0.57C1.45 0.82 0.71 1.56 0.46 2.5C0 4.23 0 8 0 8C0 8 0 11.77 0.46 13.5C0.71 14.44 1.45 15.18 2.39 15.43C4.12 15.9 11 15.9 11 15.9C11 15.9 17.88 15.9 19.61 15.43C20.55 15.18 21.29 14.44 21.54 13.5C22 11.77 22 8 22 8C22 8 22 4.23 21.54 2.5Z" fill="#FF0000"/><path d="M8.8 11.37L14.45 8L8.8 4.63V11.37Z" fill="white"/></svg>
-      <span style="font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--pink);letter-spacing:4px">VIRAL CONTENT DISCOVERY</span>
-    </div>
-    <h2 class="section-title bebas" style="text-align:center">DISCOVER VIRAL VIDEOS <span>FROM YOUTUBE</span></h2>
-    <div class="section-divider"></div>
-    <p style="text-align:center;color:var(--pink);font-size:15px;font-weight:800;margin-top:14px;margin-bottom:6px">Hanap ka ng viral → gawin mong content agad</p>
-    <p style="text-align:center;color:#bbb;font-size:14px;margin-bottom:36px">Piliin ang viral video sa YouTube → Ready na ang Hook, Script, Caption, CTA, at Hashtags.</p>
+<div class="yt-inner">
 
-    <div class="yt-box">
-      <div class="yt-tabs">
-        <div class="yt-tab active" onclick="switchYtTab('ph',this)">🔴 Trending PH</div>
-        <div class="yt-tab" onclick="switchYtTab('global',this)">🌍 Global Viral</div>
-        <div class="yt-tab" onclick="switchYtTab('niche',this)">🎯 Search by Niche</div>
+  <div style="text-align:center;margin-bottom:12px">
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--pink);letter-spacing:4px">VIRAL CONTENT DISCOVERY</span>
+  </div>
+  <h2 class="section-title bebas" style="text-align:center">STEAL VIRAL FORMULAS FROM <span>ANY VIDEO</span></h2>
+  <div class="section-divider"></div>
+  <p style="text-align:center;font-size:12px;font-weight:700;margin-top:10px;margin-bottom:6px"><span style="color:var(--yellow)">I-type ang niche mo</span> <span style="color:var(--pink)">→</span> <span style="color:var(--pink)">piliin ang viral video</span> <span style="color:var(--yellow)">→</span> <span style="color:var(--yellow)">i-decode ang formula</span> <span style="color:var(--pink)">→</span> <span style="color:var(--pink)">gawin mong content</span></p>
+
+  <!-- PLATFORM TABS -->
+  <div class="vd-tabs">
+    <div class="vd-tab active" onclick="vdSwitchTab('youtube',this)"><span style="color:#FF0000">▶</span> YouTube</div>
+    <div class="vd-tab" onclick="vdSwitchTab('tiktok',this)">🎵 TikTok</div>
+    <div class="vd-tab" onclick="vdSwitchTab('facebook',this)">👤 FB Reels</div>
+  </div>
+
+  <!-- YOUTUBE PANEL -->
+  <div id="vdPanel-youtube" class="vd-panel">
+    <div class="vd-search-box">
+      <div class="vd-search-label">I-TYPE ANG IYONG NICHE</div>
+      <div style="display:flex;gap:10px">
+        <input type="text" id="vdYtInput" placeholder="Halimbawa: Airbnb, Corporate Giveaways, Hugot, Negosyo..."
+          class="vd-input"
+          onfocus="this.style.borderColor='#FF0000'" onblur="this.style.borderColor='#2a2a2a'"
+          onkeydown="if(event.key==='Enter')vdSearchYouTube()"/>
+        <button onclick="vdSearchYouTube()" class="vd-btn vd-btn-red">▶ SEARCH</button>
       </div>
-      <div class="yt-body">
-        <div id="ytTabDesc" style="background:rgba(255,0,0,0.06);border:1px solid rgba(255,0,0,0.15);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#bbb">
-          <span id="ytTabDescText">🔴 Anong viral ngayon sa Pilipinas — 1M+ views lang, pinaka-trending Filipino content.</span>
-        </div>
-        <!-- Controls -->
-        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-          <div style="display:flex;background:#111;border:1px solid var(--border);border-radius:50px;overflow:hidden">
-            <span class="yt-sort-pill active" data-order="relevance" onclick="resortYt(this)" style="border-radius:50px 0 0 50px;border:none;padding:8px 18px">🔥 Trending</span>
-            <span class="yt-sort-pill" data-order="date" onclick="resortYt(this)" style="border-radius:0 50px 50px 0;border:none;padding:8px 18px">🆕 Newest First</span>
-          </div>
-          <div style="display:flex;background:#111;border:1px solid var(--border);border-radius:50px;overflow:hidden;margin-left:auto">
-            <span class="yt-sort-pill" data-videotype="short" onclick="selectYtType(this)" style="border-radius:50px 0 0 50px;border:none;padding:8px 16px">📱 Shorts</span>
-            <span class="yt-sort-pill active" data-videotype="video" onclick="selectYtType(this)" style="border-radius:0 50px 50px 0;border:none;padding:8px 16px">🎬 Videos</span>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
-          <span style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);color:var(--yellow);font-size:10px;font-weight:800;padding:4px 12px;border-radius:50px;letter-spacing:1px">👁 1M+ VIEWS ONLY</span>
-          <span style="font-size:11px;color:var(--muted)">Pinaka-viral content lang ang nagpapakita</span>
-        </div>
-        <!-- Niche search -->
-        <div id="ytNicheSearch" style="display:none;margin-bottom:18px">
-          <div style="display:flex;gap:10px">
-            <input type="text" id="ytSearchInput" placeholder="I-type ang iyong niche: corporate giveaways, hugot, airbnb..."
-              style="flex:1;background:#111;border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:.2s"
-              onfocus="this.style.borderColor='#FF0000'" onblur="this.style.borderColor='var(--border)'"
-              onkeydown="if(event.key==='Enter') searchYouTube()"/>
-            <button onclick="searchYouTube()" style="background:#FF0000;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;cursor:pointer;white-space:nowrap" onmouseover="this.style.background='#cc0000'" onmouseout="this.style.background='#FF0000'">▶ SEARCH</button>
-          </div>
-        </div>
-        <!-- Load button -->
-        <div id="ytAutoLoadBtn" style="margin-bottom:18px">
-          <button onclick="searchYouTube()" id="ytLoadTabBtn"
-            style="width:100%;background:#FF0000;color:#fff;border:none;padding:14px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:.2s"
-            onmouseover="this.style.background='#cc0000'" onmouseout="this.style.background='#FF0000'">
-            🔴 I-LOAD ANG TRENDING PH VIDEOS →
-          </button>
-        </div>
-        <!-- Loading -->
-        <div id="ytLoading" style="display:none;text-align:center;padding:40px">
-          <div style="font-size:36px;margin-bottom:12px;animation:spin 1s linear infinite;display:inline-block">▶️</div>
-          <div style="color:var(--muted);font-size:14px" id="ytLoadingText">Nagha-hanap ng 1M+ views videos...</div>
-        </div>
-        <!-- Results -->
-        <div id="ytResults" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div style="font-size:11px;color:#FF0000;font-weight:800;letter-spacing:2px">▶ RESULTS</div>
-            <div id="ytResultMeta" style="font-size:11px;color:var(--muted)"></div>
-          </div>
-          <div id="ytGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px"></div>
-          <div style="text-align:center;margin-top:20px">
-            <button id="ytLoadMore" onclick="loadMoreYT()" style="display:none;background:transparent;color:var(--muted);border:1px solid var(--border);padding:10px 28px;border-radius:50px;font-weight:700;font-size:13px;cursor:pointer" onmouseover="this.style.borderColor='#FF0000';this.style.color='#FF0000'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Load More</button>
-          </div>
-        </div>
-        <!-- Player Modal -->
-        <div id="ytPlayerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:2000;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
-          <div style="background:var(--card);border:2px solid #FF0000;border-radius:20px;max-width:820px;width:100%;overflow:hidden;animation:slideUp .3s ease;margin:auto">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border)">
-              <div id="ytPlayerTitle" style="font-size:14px;font-weight:800;color:var(--text);flex:1;margin-right:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-              <button onclick="closeYtPlayer()" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;flex-shrink:0">×</button>
-            </div>
-            <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden">
-              <iframe id="ytIframe" src="" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>
-            </div>
-            <div style="padding:12px 20px;border-bottom:1px solid var(--border)">
-              <div id="ytPlayerMeta" style="font-size:12px;color:var(--muted)"></div>
-            </div>
-            <div style="background:linear-gradient(135deg,rgba(255,27,141,0.1),rgba(255,215,0,0.05));padding:20px">
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--pink);margin-bottom:8px;letter-spacing:1px">🚀 GUSTO MO BANG GAWING INSPIRATION ITO PARA SA CONTENT MO?</div>
-              <p style="font-size:13px;color:#bbb;margin-bottom:14px">I-click → auto-generate agad ng <strong style="color:var(--yellow)">Hook · Concept · Script · Caption · CTA · Music · Hashtags</strong></p>
-              <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button onclick="confirmYtInspiration()" style="background:var(--pink);color:#fff;border:none;padding:13px 28px;border-radius:50px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer" onmouseover="this.style.background='#e00070'" onmouseout="this.style.background='var(--pink)'">⚡ OO! I-GENERATE NA! →</button>
-                <button onclick="closeYtPlayer()" style="background:transparent;color:var(--muted);border:1px solid var(--border);padding:13px 24px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer">Hindi pa muna</button>
-              </div>
-            </div>
-          </div>
-        </div>
+    </div>
+    <div id="vdYtLoading" style="display:none;text-align:center;padding:40px;color:#999">
+      <div style="font-size:32px;margin-bottom:10px;animation:spin 1s linear infinite;display:inline-block">▶️</div>
+      <div id="vdYtLoadingText" style="font-size:14px">Naghahanap ng viral videos...</div>
+    </div>
+    <div id="vdYtError" class="vd-error" style="display:none"></div>
+    <div id="vdYtGrid" class="vd-grid"></div>
+  </div>
+
+  <!-- TIKTOK PANEL -->
+  <div id="vdPanel-tiktok" class="vd-panel" style="display:none">
+    <div class="vd-search-box">
+      <div class="vd-search-label">I-PASTE ANG TIKTOK VIDEO URL</div>
+      <div style="display:flex;gap:10px">
+        <input type="text" id="vdTtInput" placeholder="https://www.tiktok.com/@username/video/..."
+          class="vd-input"
+          onfocus="this.style.borderColor='var(--pink)'" onblur="this.style.borderColor='#2a2a2a'"
+          onkeydown="if(event.key==='Enter')vdEmbedTikTok()"/>
+        <button onclick="vdEmbedTikTok()" class="vd-btn vd-btn-pink">▶ EMBED</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#444">Tip: Kailangan public ang TikTok video</div>
+    </div>
+    <div id="vdTtError" class="vd-error" style="display:none"></div>
+    <div id="vdTtResult" style="display:none"></div>
+  </div>
+
+  <!-- FACEBOOK PANEL -->
+  <div id="vdPanel-facebook" class="vd-panel" style="display:none">
+    <div class="vd-search-box">
+      <div class="vd-search-label">I-PASTE ANG FACEBOOK VIDEO / REEL URL</div>
+      <div style="display:flex;gap:10px">
+        <input type="text" id="vdFbInput" placeholder="https://www.facebook.com/reel/..."
+          class="vd-input"
+          onfocus="this.style.borderColor='#1877F2'" onblur="this.style.borderColor='#2a2a2a'"
+          onkeydown="if(event.key==='Enter')vdEmbedFacebook()"/>
+        <button onclick="vdEmbedFacebook()" class="vd-btn vd-btn-blue">▶ EMBED</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#444">Tip: Kailangan public ang Facebook video/Reel</div>
+    </div>
+    <div id="vdFbError" class="vd-error" style="display:none"></div>
+    <div id="vdFbResult" style="display:none"></div>
+  </div>
+
+  <!-- PLAYER MODAL (YouTube) -->
+  <div id="vdPlayerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:2000;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+    <div style="background:#1A1A1A;border:2px solid #FF0000;border-radius:20px;max-width:820px;width:100%;overflow:hidden;margin:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #2a2a2a">
+        <div id="vdPlayerTitle" style="font-size:14px;font-weight:800;color:#f0f0f0;flex:1;margin-right:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+        <button onclick="vdClosePlayer()" style="background:transparent;border:1px solid #2a2a2a;color:#999;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;flex-shrink:0">×</button>
+      </div>
+      <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden">
+        <iframe id="vdPlayerIframe" src="" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>
+      </div>
+      <div style="padding:20px">
+        <div id="vdPlayerMeta" style="font-size:12px;color:#999;margin-bottom:16px"></div>
+        <button onclick="vdStealFromPlayer()" style="width:100%;padding:15px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer">🔥 STEAL THIS FORMULA →</button>
+        <button onclick="vdClosePlayer()" style="width:100%;padding:10px;background:transparent;color:#666;border:1px solid #2a2a2a;border-radius:10px;font-size:13px;cursor:pointer;margin-top:8px">Hindi pa muna</button>
       </div>
     </div>
   </div>
+
+</div>
 </section>
 
 <style>
-.yt-section{padding:30px 40px 60px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.yt-inner{max-width:1000px;margin:0 auto}
-.yt-box{background:var(--card);border:2px solid rgba(255,0,0,0.3);border-radius:24px;overflow:hidden}
-.yt-tabs{display:flex;border-bottom:1px solid var(--border)}
-.yt-tab{flex:1;padding:18px 12px;text-align:center;font-size:18px;font-weight:800;cursor:pointer;transition:.2s;color:var(--muted);background:#111;letter-spacing:.5px}
-.yt-tab:hover{color:#FF4444;background:rgba(255,0,0,0.05)}
-.yt-tab.active{background:rgba(255,0,0,0.1);color:#FF4444;border-bottom:2px solid #FF0000}
-.yt-body{padding:24px}
-.yt-sort-pill{background:transparent;border:none;color:var(--muted);padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:.2s;user-select:none}
-.yt-sort-pill:hover{color:#FF4444}
-.yt-sort-pill.active{background:rgba(255,0,0,0.18);color:#FF4444}
-.yt-card{background:#111;border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:.3s;display:flex;flex-direction:column}
-.yt-card:hover{border-color:#FF0000;transform:translateY(-3px);box-shadow:0 8px 24px rgba(255,0,0,0.15)}
-.yt-thumb-wrap{position:relative;cursor:pointer}
-.yt-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
-.yt-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:.2s}
-.yt-thumb-wrap:hover .yt-play-overlay{background:rgba(0,0,0,0.45)}
-.yt-play-btn{width:52px;height:52px;background:#FF0000;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;transform:scale(0.8)}
-.yt-thumb-wrap:hover .yt-play-btn{opacity:1;transform:scale(1)}
-.yt-card-body{padding:12px;flex:1;display:flex;flex-direction:column;gap:5px}
-.yt-card-title{font-size:12px;font-weight:700;color:var(--text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.yt-channel{font-size:10px;color:var(--pink);font-weight:700}
-.yt-card-stats{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.yt-views-badge{background:rgba(255,0,0,0.1);border:1px solid rgba(255,0,0,0.2);color:#FF4444;font-size:9px;font-weight:800;padding:2px 8px;border-radius:50px}
-.yt-date-badge{font-size:9px;color:var(--muted);font-weight:700}
-.yt-cta-btn{margin-top:auto;width:100%;padding:9px 6px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.3px;cursor:pointer;transition:.2s}
-.yt-cta-btn:hover{background:#e00070}
-@media(max-width:768px){.yt-section{padding:40px 20px}.yt-body{padding:16px}#ytGrid{grid-template-columns:1fr 1fr!important}}
-@media(max-width:480px){#ytGrid{grid-template-columns:1fr!important}}
+.yt-section{padding:40px 40px 60px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.yt-inner{max-width:1100px;margin:0 auto}
+/* Video Discovery Tabs */
+.vd-tabs{display:flex;gap:0;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;margin:28px 0 0}
+.vd-tab{flex:1;padding:16px 12px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;cursor:pointer;transition:.2s;color:#555;background:#111}
+.vd-tab:hover{color:#FF1B8D;background:rgba(255,27,141,0.05)}
+.vd-tab.active{color:#fff;background:rgba(255,27,141,0.15);border-bottom:2px solid var(--pink)}
+.vd-panel{padding:24px 0}
+.vd-search-box{background:#111;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:24px}
+.vd-search-label{font-size:10px;color:var(--pink);font-weight:800;letter-spacing:3px;margin-bottom:12px}
+.vd-input{flex:1;background:#0a0a0a;border:1.5px solid #2a2a2a;color:#f0f0f0;padding:13px 16px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:.2s}
+.vd-btn{border:none;padding:13px 24px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:.2s}
+.vd-btn-red{background:#FF0000;color:#fff}.vd-btn-red:hover{background:#cc0000}
+.vd-btn-pink{background:var(--pink);color:#fff}.vd-btn-pink:hover{background:#e00070}
+.vd-btn-blue{background:#1877F2;color:#fff}.vd-btn-blue:hover{background:#1558b0}
+.vd-error{background:rgba(255,27,141,0.08);border:1px solid rgba(255,27,141,0.2);border-radius:10px;padding:14px;color:#ff6b9d;font-size:13px;margin-bottom:16px}
+/* Video Grid */
+.vd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:768px){.yt-section{padding:30px 20px}.vd-grid{grid-template-columns:1fr 1fr!important}}
+@media(max-width:480px){.vd-grid{grid-template-columns:1fr!important}.vd-tabs{flex-wrap:wrap}}
+/* Video Card */
+.vd-card{background:#111;border:1px solid #2a2a2a;border-radius:14px;overflow:hidden;transition:.3s;display:flex;flex-direction:column}
+.vd-card:hover{border-color:var(--pink);transform:translateY(-3px)}
+.vd-thumb-wrap{position:relative;cursor:pointer}
+.vd-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+.vd-play-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;transition:.2s}
+.vd-thumb-wrap:hover .vd-play-overlay{background:rgba(0,0,0,0.5)}
+.vd-play-btn{width:48px;height:48px;background:#FF0000;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;transform:scale(0.8)}
+.vd-thumb-wrap:hover .vd-play-btn{opacity:1;transform:scale(1)}
+.vd-card-body{padding:12px;flex:1;display:flex;flex-direction:column;gap:6px}
+.vd-card-title{font-size:12px;font-weight:700;color:#f0f0f0;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vd-channel{font-size:10px;color:var(--pink);font-weight:700}
+.vd-stats{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vd-views{background:rgba(255,0,0,0.1);border:1px solid rgba(255,0,0,0.2);color:#FF4444;font-size:9px;font-weight:800;padding:2px 8px;border-radius:50px}
+.vd-steal-btn{margin-top:auto;width:100%;padding:10px 6px;background:linear-gradient(135deg,var(--pink),#b5124c);color:#fff;border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.5px;cursor:pointer;transition:.2s}
+.vd-steal-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,27,141,0.4)}
+/* Formula Panel under video */
+.vd-formula{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:12px;padding:16px;margin-top:8px;display:none}
+.vd-formula.show{display:block;animation:slideUp .3s ease}
+.vd-formula-section{margin-bottom:14px}
+.vd-formula-label{font-size:10px;color:var(--pink);font-weight:800;letter-spacing:2px;margin-bottom:6px}
+.vd-formula-text{font-size:12px;color:#aaa;line-height:1.7}
+.vd-etags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.vd-etag{background:rgba(255,27,141,0.1);border:1px solid rgba(255,27,141,0.2);color:var(--pink);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.vd-template{background:rgba(255,215,0,0.04);border:1.5px dashed rgba(255,215,0,0.2);border-radius:8px;padding:12px;font-size:11px;color:#888;line-height:1.8;font-style:italic;margin-top:8px;white-space:pre-wrap}
+.vd-template span{color:#FFD700;font-style:normal;font-weight:700}
+.vd-use-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--pink),#b5124c);color:#fff;border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;margin-top:12px;transition:.2s}
+.vd-use-btn:hover{box-shadow:0 4px 20px rgba(255,27,141,0.4)}
+/* Embed result */
+.vd-embed-result{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:600px){.vd-embed-result{grid-template-columns:1fr}}
 </style>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// YOUTUBE CACHE-FIRST SYSTEM — Post Na Viral
-// Uses localStorage as client cache + Google Apps Script as
-// shared server cache. Protects against scraping failures and
-// minimises redundant network calls across all users.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// VIDEO DISCOVERY SYSTEM — Post Na Viral
+// YouTube (API) + TikTok (embed) + FB Reels (embed)
+// Cache-first, quota-protected
+// ═══════════════════════════════════════════════
 
-// ── QUOTA CONFIG (update if you switch to real YouTube Data API) ──
-const YT_QUOTA = {
-  total:        10000,   // YouTube Data API daily quota
-  reserve:      3000,    // Reserved for cron/preload
-  costPerSearch: 101,    // search.list(100) + videos.list(1)
-  get usable()  { return this.total - this.reserve; },
-  get dailyCap(){ return Math.floor(this.usable / this.costPerSearch); } // = 69
-};
+const YT_API_KEY   = 'AIzaSyB4nIliTPi769ZySS38aZS-WKKLaeolTuo';
+const YT_MIN_VIEWS = 1000000;
 
-// ── CLIENT-SIDE CACHE (localStorage) ──
-// Key: 'pnv_yt_cache_' + normalizedQuery
-// Value: { results:[], cachedAt: timestamp, expiresAt: timestamp, source:'scrape'|'api' }
-const YT_CACHE_TTL = {
-  trending:  6  * 60 * 60 * 1000,  // 6 hours
-  normal:    24 * 60 * 60 * 1000,  // 24 hours
-  evergreen: 72 * 60 * 60 * 1000,  // 3 days
-};
-
-// ── GLOBAL DAILY CAP (stored in localStorage, keyed by date) ──
-// Tracks how many real network fetches happened today across this browser session.
-// The Apps Script server enforces the shared global cap across ALL users.
+// ── CACHE ──
+const YT_CACHE_TTL = { trending:6*3600000, normal:24*3600000, evergreen:72*3600000 };
 const YT_DAILY_CAP_KEY = 'pnv_yt_daily_cap';
 
-function getYtDailyCap() {
-  try {
-    const raw = localStorage.getItem(YT_DAILY_CAP_KEY);
-    if (!raw) return { date: new Date().toDateString(), count: 0 };
-    const data = JSON.parse(raw);
-    if (data.date !== new Date().toDateString()) return { date: new Date().toDateString(), count: 0 };
-    return data;
-  } catch(e) { return { date: new Date().toDateString(), count: 0 }; }
+function normQ(q){ return q.toLowerCase().trim().replace(/\s+/g,' '); }
+function cacheKey(q){ return 'pnv_yt_cache_'+normQ(q); }
+
+function getCache(q){
+  try{
+    const r=localStorage.getItem(cacheKey(q));
+    if(!r) return null;
+    const d=JSON.parse(r);
+    if(Date.now()>d.expiresAt){ localStorage.removeItem(cacheKey(q)); return null; }
+    return d;
+  }catch(e){ return null; }
 }
-
-function incrementYtDailyCap() {
-  const cap = getYtDailyCap();
-  cap.count++;
-  try { localStorage.setItem(YT_DAILY_CAP_KEY, JSON.stringify(cap)); } catch(e){}
+function setCache(q,results,type='normal'){
+  const ttl=YT_CACHE_TTL[type]||YT_CACHE_TTL.normal;
+  try{ localStorage.setItem(cacheKey(q),JSON.stringify({results,cachedAt:Date.now(),expiresAt:Date.now()+ttl})); }catch(e){}
 }
-
-function isYtCapReached() {
-  // Client-side safety: max 15 scrapes per browser per day
-  // Real global cap (69/day) enforced server-side via Apps Script
-  return getYtDailyCap().count >= 15;
+function getDailyCap(){
+  try{
+    const r=localStorage.getItem(YT_DAILY_CAP_KEY);
+    if(!r) return {date:new Date().toDateString(),count:0};
+    const d=JSON.parse(r);
+    if(d.date!==new Date().toDateString()) return {date:new Date().toDateString(),count:0};
+    return d;
+  }catch(e){ return {date:new Date().toDateString(),count:0}; }
 }
+function incDailyCap(){ const c=getDailyCap(); c.count++; try{localStorage.setItem(YT_DAILY_CAP_KEY,JSON.stringify(c));}catch(e){} }
+function isCapReached(){ return getDailyCap().count>=15; }
 
-// ── CACHE HELPERS ──
-function normalizeQuery(q) { return q.toLowerCase().trim().replace(/\s+/g,' '); }
-
-function getCacheKey(query) { return 'pnv_yt_cache_' + normalizeQuery(query); }
-
-function getYtCache(query) {
-  try {
-    const raw = localStorage.getItem(getCacheKey(query));
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (Date.now() > data.expiresAt) { localStorage.removeItem(getCacheKey(query)); return null; }
-    return data;
-  } catch(e) { return null; }
+// ── UTILS ──
+function fmtViews(n){
+  if(!n) return '0';
+  n=parseInt(n);
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return n.toLocaleString();
 }
-
-function setYtCache(query, results, type='normal') {
-  const ttl = YT_CACHE_TTL[type] || YT_CACHE_TTL.normal;
-  const entry = {
-    results,
-    cachedAt: Date.now(),
-    expiresAt: Date.now() + ttl,
-    cacheType: type,
-    query: normalizeQuery(query)
-  };
-  try { localStorage.setItem(getCacheKey(query), JSON.stringify(entry)); } catch(e) {
-    // Storage full — clear oldest YT cache entries
-    clearOldYtCache();
-    try { localStorage.setItem(getCacheKey(query), JSON.stringify(entry)); } catch(e2){}
-  }
-}
-
-function clearOldYtCache() {
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('pnv_yt_cache_'));
-  keys.forEach(k => {
-    try {
-      const d = JSON.parse(localStorage.getItem(k));
-      if (Date.now() > d.expiresAt) localStorage.removeItem(k);
-    } catch(e) { localStorage.removeItem(k); }
-  });
-}
-
-// ── DETERMINE CACHE TYPE PER QUERY ──
-function getCacheType(query, tab) {
-  if (tab === 'ph' || tab === 'global') return 'trending';
-  const evergreen = ['airbnb','corporate','giveaway','love','confession','kdp','healing','journal'];
-  const q = query.toLowerCase();
-  if (evergreen.some(k => q.includes(k))) return 'evergreen';
-  return 'normal';
-}
-
-// ── SHOW CACHE BADGE IN UI ──
-function showCacheBadge(source, cachedAt) {
-  const existing = document.getElementById('ytCacheBadge');
-  if (existing) existing.remove();
-  const badge = document.createElement('div');
-  badge.id = 'ytCacheBadge';
-  const isCache = source === 'cache';
-  const timeAgo = cachedAt ? Math.round((Date.now() - cachedAt) / 60000) + 'm ago' : '';
-  badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:' +
-    (isCache ? 'rgba(0,200,100,0.1)' : 'rgba(255,0,0,0.08)') +
-    ';border:1px solid ' + (isCache ? 'rgba(0,200,100,0.3)' : 'rgba(255,0,0,0.2)') +
-    ';color:' + (isCache ? '#00c864' : '#FF4444') +
-    ';font-size:10px;font-weight:800;padding:3px 10px;border-radius:50px;letter-spacing:1px;margin-left:8px';
-  badge.textContent = isCache ? ('⚡ CACHED ' + timeAgo) : '🔴 LIVE';
-  const meta = document.getElementById('ytResultMeta');
-  if (meta) meta.appendChild(badge);
-}
-
-// ── YOUTUBE DATA API v3 KEY ──
-const YT_API_KEY = 'AIzaSyB4nIliTPi769ZySS38aZS-WKKLaeolTuo';
-const YT_MIN_VIEWS = 1000000;
-let ytVideoType    = 'video';
-let ytCurrentTab   = 'ph';
-let ytSortOrder    = 'relevance';
-let ytNextPageToken= '';
-let ytCurrentVideoData = null;
-let ytAllItems     = [];
-let ytStatsMap     = {};
-
-const YT_TAB_CONFIG = {
-  ph:    {query:'viral Philippines trending Filipino',label:'🔴 Trending PH',desc:'🔴 Anong viral ngayon sa Pilipinas — 1M+ views lang.',btnText:'🔴 I-LOAD ANG TRENDING PH VIDEOS →'},
-  global:{query:'viral video trending worldwide most viewed',label:'🌍 Global Viral',desc:'🌍 Top viral worldwide — 1M+ views, i-adapt sa Pinoy audience.',btnText:'🌍 I-LOAD ANG GLOBAL VIRAL VIDEOS →'},
-  niche: {query:'',label:'🎯 Search by Niche',desc:'🎯 I-type ang iyong niche — 1M+ views na videos lang ang lalabas.',btnText:''}
-};
-
-function switchYtTab(tab,el){
-  ytCurrentTab=tab;
-  document.querySelectorAll('.yt-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('ytTabDescText').textContent=YT_TAB_CONFIG[tab].desc;
-  const isNiche=tab==='niche';
-  document.getElementById('ytNicheSearch').style.display=isNiche?'block':'none';
-  document.getElementById('ytAutoLoadBtn').style.display=isNiche?'none':'block';
-  if(!isNiche) document.getElementById('ytLoadTabBtn').textContent=YT_TAB_CONFIG[tab].btnText;
-  document.getElementById('ytGrid').innerHTML='';
-  document.getElementById('ytResults').style.display='none';
-  ytAllItems=[]; ytStatsMap={}; ytNextPageToken='';
-}
-
-function selectYtType(el){
-  document.querySelectorAll('.yt-sort-pill[data-videotype]').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  ytVideoType=el.dataset.videotype;
-  ytAllItems=[]; ytStatsMap={};
-  document.getElementById('ytGrid').innerHTML='';
-  document.getElementById('ytResults').style.display='none';
-  searchYouTube();
-}
-
-function resortYt(el){
-  document.querySelectorAll('.yt-sort-pill[data-order]').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  const newOrder=el.dataset.order;
-  if(newOrder===ytSortOrder) return;
-  ytSortOrder=newOrder;
-  if(ytAllItems.length>0){
-    // Re-sort in-memory — zero network calls
-    document.getElementById('ytGrid').innerHTML='';
-    renderYtCards(sortYtItems(ytAllItems));
-  } else { searchYouTube(); }
-}
-
-// ── COOLDOWN TRACKER (prevent spam clicks) ──
-const _ytCooldowns = {};
-function ytCooldownOk(key, ms=8000) {
-  const now = Date.now();
-  if (_ytCooldowns[key] && now - _ytCooldowns[key] < ms) {
-    const wait = Math.ceil((ms - (now - _ytCooldowns[key])) / 1000);
-    showToast('⏳ Sandali lang — hintayin ang ' + wait + 's bago ulit mag-search.');
-    return false;
-  }
-  _ytCooldowns[key] = now;
-  return true;
-}
-
-// ── MAIN SEARCH FUNCTION — CACHE-FIRST ──
-async function searchYouTube(pageToken='') {
-  const isNiche = ytCurrentTab === 'niche';
-  let query = isNiche
-    ? document.getElementById('ytSearchInput').value.trim()
-    : YT_TAB_CONFIG[ytCurrentTab].query;
-
-  if (isNiche && !query) {
-    document.getElementById('ytSearchInput').style.borderColor = '#FF0000';
-    setTimeout(() => document.getElementById('ytSearchInput').style.borderColor = 'var(--border)', 2000);
-    return;
-  }
-  if (!userData) { showToast('❗ Mag-login muna!'); showGate(); return; }
-
-  // ── COOLDOWN: prevent spam clicking ──
-  if (!ytCooldownOk('yt_search_' + normalizeQuery(query), 8000)) return;
-
-  if (!pageToken) { ytAllItems = []; ytStatsMap = {}; document.getElementById('ytGrid').innerHTML = ''; }
-
-  document.getElementById('ytAutoLoadBtn').style.display = 'none';
-  document.getElementById('ytLoading').style.display = 'block';
-  document.getElementById('ytResults').style.display = 'none';
-  document.getElementById('ytLoadingText').textContent = 'Nagha-hanap ng viral videos...';
-
-  // ════════════════════════════════════════════
-  // STEP 1: CHECK LOCAL CACHE FIRST
-  // ════════════════════════════════════════════
-  const cached = getYtCache(query);
-  if (cached && cached.results && cached.results.length > 0) {
-    // Cache hit — serve instantly, zero network calls
-    document.getElementById('ytLoadingText').textContent = '⚡ Loading from cache...';
-    await new Promise(r => setTimeout(r, 300)); // tiny delay so loader is visible
-
-    ytAllItems = cached.results;
-    cached.results.forEach(item => {
-      ytStatsMap[item.id.videoId] = item._stats || { viewCount: 0 };
-    });
-
-    const sorted = sortYtItems(ytAllItems);
-    renderYtCards(sorted);
-    document.getElementById('ytLoadMore').style.display = 'none';
-    document.getElementById('ytResultMeta').textContent =
-      sorted.length + ' viral videos · ' + YT_TAB_CONFIG[ytCurrentTab].label;
-    document.getElementById('ytLoading').style.display = 'none';
-    document.getElementById('ytResults').style.display = 'block';
-    document.getElementById('ytResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    showCacheBadge('cache', cached.cachedAt);
-    return; // DONE — no network call made
-  }
-
-  // ════════════════════════════════════════════
-  // STEP 1.5: CHECK SERVER CACHE (shared across ALL users)
-  // If another user already fetched this query, use their result.
-  // Zero scraping needed.
-  // ════════════════════════════════════════════
-  if (APPS_SCRIPT_URL) {
-    try {
-      document.getElementById('ytLoadingText').textContent = '🔍 Checking shared cache...';
-      const serverRes = await fetch(
-        APPS_SCRIPT_URL + '?action=getYtCache&query=' + encodeURIComponent(normalizeQuery(query))
-      );
-      if (serverRes.ok) {
-        const serverData = await serverRes.json();
-        if (serverData.found && serverData.results && serverData.results.length > 0) {
-          // Save to local cache so next time is even faster
-          setYtCache(query, serverData.results, serverData.cacheType || 'normal');
-          ytAllItems = serverData.results;
-          serverData.results.forEach(item => {
-            ytStatsMap[item.id.videoId] = item._stats || { viewCount: 0 };
-          });
-          const sorted = sortYtItems(ytAllItems);
-          renderYtCards(sorted);
-          document.getElementById('ytLoadMore').style.display = 'none';
-          document.getElementById('ytResultMeta').textContent =
-            sorted.length + ' viral videos · ' + YT_TAB_CONFIG[ytCurrentTab].label;
-          document.getElementById('ytLoading').style.display = 'none';
-          document.getElementById('ytResults').style.display = 'block';
-          document.getElementById('ytResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
-          showCacheBadge('cache', serverData.cachedAt);
-          return; // DONE — served from shared server cache
-        }
-      }
-    } catch(serverErr) {
-      // Server cache unavailable — fall through to live scrape
-      console.log('Server cache check failed, falling through:', serverErr.message);
-    }
-  }
-
-  // ════════════════════════════════════════════
-  // STEP 2: CHECK GLOBAL CAP (client-side guard)
-  // ════════════════════════════════════════════
-  if (isYtCapReached()) {
-    // Client cap hit — show any stale cached data or fallback message
-    showToast('Showing cached viral results. Fresh results update in a few hours.');
-    document.getElementById('ytLoadingText').textContent = '📦 Loading latest cached results...';
-
-    const staleCache = getStaleYtCache(query);
-    if (staleCache && staleCache.results.length > 0) {
-      ytAllItems = staleCache.results;
-      staleCache.results.forEach(i => { ytStatsMap[i.id.videoId] = i._stats || { viewCount: 0 }; });
-      renderYtCards(sortYtItems(ytAllItems));
-      document.getElementById('ytResultMeta').textContent =
-        ytAllItems.length + ' cached viral videos · ' + YT_TAB_CONFIG[ytCurrentTab].label;
-      showCacheBadge('cache', staleCache.cachedAt);
-    } else {
-      document.getElementById('ytGrid').innerHTML =
-        '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">' +
-        '📦 Showing cached viral results. Fresh results update soon.</div>';
-    }
-    document.getElementById('ytLoading').style.display = 'none';
-    document.getElementById('ytResults').style.display = 'block';
-    return;
-  }
-
-  // ════════════════════════════════════════════
-  // STEP 3: NO CACHE — CALL REAL YOUTUBE DATA API v3
-  // search.list = 100 units, videos.list = 1 unit
-  // ════════════════════════════════════════════
-  document.getElementById('ytLoadingText').textContent =
-    'Nagha-hanap ng viral videos...';
-
-  try {
-    const q = ytVideoType === 'short' ? query + ' #shorts' : query;
-
-    // ── STEP 3A: search.list — get video IDs only (100 units) ──
-    const searchParams = new URLSearchParams({
-      part:        'id',
-      q:           q,
-      type:        'video',
-      order:       ytSortOrder === 'date' ? 'date' : 'viewCount',
-      maxResults:  '20',
-      regionCode:  'PH',
-      relevanceLanguage: 'tl',
-      key:         YT_API_KEY
-    });
-    if (ytVideoType === 'short') searchParams.set('videoDuration', 'short');
-
-    document.getElementById('ytLoadingText').textContent = 'Searching viral videos...';
-    const searchRes = await fetch(
-      'https://www.googleapis.com/youtube/v3/search?' + searchParams.toString()
-    );
-    if (!searchRes.ok) {
-      const err = await searchRes.json();
-      throw new Error(err?.error?.message || 'YouTube API error: ' + searchRes.status);
-    }
-    const searchData = await searchRes.json();
-    const rawIds = (searchData.items || []).map(i => i.id.videoId).filter(Boolean);
-
-    if (rawIds.length === 0) {
-      showToast('⚠️ Walang videos found. Try ng ibang keyword!');
-      document.getElementById('ytLoading').style.display = 'none';
-      if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
-      return;
-    }
-
-    // ── STEP 3B: videos.list — get full details in one batch (1 unit) ──
-    document.getElementById('ytLoadingText').textContent = 'Loading video details...';
-    const videoParams = new URLSearchParams({
-      part:  'snippet,statistics,contentDetails',
-      id:    rawIds.join(','),
-      key:   YT_API_KEY
-    });
-    const videoRes = await fetch(
-      'https://www.googleapis.com/youtube/v3/videos?' + videoParams.toString()
-    );
-    if (!videoRes.ok) throw new Error('videos.list failed: ' + videoRes.status);
-    const videoData = await videoRes.json();
-
-    // ── STEP 3C: build video objects, filter 1M+ views ──
-    const videos = [];
-    for (const item of (videoData.items || [])) {
-      const videoId   = item.id;
-      const snippet   = item.snippet || {};
-      const stats     = item.statistics || {};
-      const viewCount = parseInt(stats.viewCount || '0');
-
-      if (viewCount < YT_MIN_VIEWS) continue;
-
-      const thumbs    = snippet.thumbnails || {};
-      const thumbnail = (thumbs.maxres || thumbs.high || thumbs.medium || thumbs.default || {}).url
-                     || 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg';
-
-      const entry = {
-        id: { videoId },
-        snippet: {
-          title:        snippet.title        || 'Video',
-          channelTitle: snippet.channelTitle || 'YouTube',
-          thumbnails: { default: { url: thumbnail }, medium: { url: thumbnail } },
-          publishedAt:  snippet.publishedAt  || new Date().toISOString(),
-        },
-        _stats: {
-          viewCount,
-          likeCount:    parseInt(stats.likeCount    || '0'),
-          commentCount: parseInt(stats.commentCount || '0'),
-          duration:     item.contentDetails?.duration || ''
-        }
-      };
-      videos.push(entry);
-      ytStatsMap[videoId] = entry._stats;
-    }
-
-
-    if (videos.length === 0) {
-      // No 1M+ videos found — try showing any cached results for this query
-      const anyCache = getStaleYtCache(query);
-      if (anyCache && anyCache.results.length > 0) {
-        showToast('📦 Showing cached results — no new 1M+ videos found.');
-        ytAllItems = anyCache.results;
-        anyCache.results.forEach(i => { ytStatsMap[i.id.videoId] = i._stats || { viewCount: 0 }; });
-        renderYtCards(sortYtItems(ytAllItems));
-        document.getElementById('ytResultMeta').textContent =
-          ytAllItems.length + ' viral videos · cached';
-        showCacheBadge('cache', anyCache.cachedAt);
-      } else {
-        showToast('⚠️ Walang 1M+ views videos. Try ng ibang keyword!');
-        if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
-      }
-      document.getElementById('ytLoading').style.display = 'none';
-      document.getElementById('ytResults').style.display = videos.length > 0 ? 'block' : 'none';
-      return;
-    }
-
-    // ── SAVE TO CACHE ──
-    ytAllItems = [...ytAllItems, ...videos];
-    const cacheType = getCacheType(query, ytCurrentTab);
-    // Deduplicate by videoId before caching
-    const seen = new Set();
-    const dedupedItems = ytAllItems.filter(i => {
-      if (seen.has(i.id.videoId)) return false;
-      seen.add(i.id.videoId);
-      return true;
-    });
-    setYtCache(query, dedupedItems, cacheType);
-    incrementYtDailyCap();
-
-    // ── ALSO SAVE TO APPS SCRIPT (shared cache for all users) ──
-    if (APPS_SCRIPT_URL) {
-      fetch(APPS_SCRIPT_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action:    'saveYtCache',
-          query:     normalizeQuery(query),
-          cacheType,
-          results:   dedupedItems.slice(0, 20), // cap payload size
-          cachedAt:  Date.now(),
-          expiresAt: Date.now() + (YT_CACHE_TTL[cacheType] || YT_CACHE_TTL.normal)
-        })
-      }).catch(() => {}); // fire-and-forget, never block UI
-    }
-
-    // ── RENDER ──
-    const sorted = sortYtItems(dedupedItems);
-    document.getElementById('ytGrid').innerHTML = '';
-    renderYtCards(sorted);
-    document.getElementById('ytLoadMore').style.display = 'none';
-    document.getElementById('ytResultMeta').textContent =
-      sorted.length + ' viral videos (1M+ views) · ' + YT_TAB_CONFIG[ytCurrentTab].label;
-    document.getElementById('ytLoading').style.display = 'none';
-    document.getElementById('ytResults').style.display = 'block';
-    document.getElementById('ytResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    showCacheBadge('live', Date.now());
-
-  } catch(e) {
-    console.error('YouTube search error:', e);
-    // Last resort: show any stale cache
-    const staleCache = getStaleYtCache(query);
-    if (staleCache && staleCache.results.length > 0) {
-      showToast('📦 Network error — showing latest cached results.');
-      ytAllItems = staleCache.results;
-      staleCache.results.forEach(i => { ytStatsMap[i.id.videoId] = i._stats || { viewCount: 0 }; });
-      renderYtCards(sortYtItems(ytAllItems));
-      document.getElementById('ytResultMeta').textContent =
-        ytAllItems.length + ' cached viral videos';
-      document.getElementById('ytResults').style.display = 'block';
-      showCacheBadge('cache', staleCache.cachedAt);
-    } else {
-      showToast('⚠️ Error sa YouTube search. Try ulit!');
-      if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
-    }
-    document.getElementById('ytLoading').style.display = 'none';
-  }
-}
-
-// ── SORT HELPER ──
-function sortYtItems(items) {
-  return [...items].sort((a, b) =>
-    ytSortOrder === 'date'
-      ? new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt)
-      : parseInt(ytStatsMap[b.id.videoId]?.viewCount || 0) - parseInt(ytStatsMap[a.id.videoId]?.viewCount || 0)
-  );
-}
-
-// ── GET STALE CACHE (expired but better than nothing) ──
-function getStaleYtCache(query) {
-  try {
-    const raw = localStorage.getItem(getCacheKey(query));
-    if (!raw) return null;
-    return JSON.parse(raw); // return even if expired
-  } catch(e) { return null; }
-}
-
-// ── FALLBACK UI HELPER ──
-function _showYtFallback(isNiche) {
-  showToast('⚠️ Hindi ma-load ang YouTube data. Try ulit mamaya!');
-  document.getElementById('ytLoading').style.display = 'none';
-  document.getElementById('ytGrid').innerHTML =
-    '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">' +
-    '📦 Temporarily unavailable. Pinaka-recent na cached results ang ipinakita.</div>';
-  document.getElementById('ytResults').style.display = 'block';
-  if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
-}
-
-function loadMoreYT(){if(ytNextPageToken)searchYouTube(ytNextPageToken);}
-
-function formatViews(n){
-  if(!n)return'0';
-  const num=parseInt(n);
-  if(num>=1000000)return(num/1000000).toFixed(1)+'M';
-  if(num>=1000)return(num/1000).toFixed(1)+'K';
-  return num.toLocaleString();
-}
-
-function formatDate(d){
-  if(!d)return'';
+function fmtDate(d){
+  if(!d) return '';
   return new Date(d).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'});
 }
-
-function parseDuration(iso){
-  if(!iso)return'';
+function parseDur(iso){
+  if(!iso) return '';
   const m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if(!m)return'';
+  if(!m) return '';
   const h=parseInt(m[1]||0),mn=parseInt(m[2]||0),s=parseInt(m[3]||0);
   if(h>0) return h+':'+(mn<10?'0':'')+mn+':'+(s<10?'0':'')+s;
   return mn+':'+(s<10?'0':'')+s;
 }
 
-function renderYtCards(items){
-  const grid=document.getElementById('ytGrid');
-  grid.innerHTML='';
-  if(!items.length){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">Walang 1M+ views na video. Try ng ibang keyword!</div>';
-    return;
-  }
-  const fallbackThumb = 'https://i.ytimg.com/vi/VIDEOID/hqdefault.jpg';
-  items.forEach(item=>{
-    const vid   = item.id.videoId;
-    const title = item.snippet.title || 'Video';
-    const ch    = item.snippet.channelTitle || 'YouTube';
-    const thumb = item.snippet.thumbnails?.medium?.url
-               || item.snippet.thumbnails?.default?.url
-               || fallbackThumb.replace('VIDEOID', vid);
-    const stats = ytStatsMap[vid] || {};
-    const views = stats.viewCount || 0;
-    const likes = stats.likeCount || 0;
-    const pub   = item.snippet.publishedAt || '';
-    const dur   = parseDuration(stats.duration || '');
-    const desc  = (item.snippet.description || '').substring(0, 150);
-
-    // Build card using createElement — no quote escaping issues
-    const card = document.createElement('div');
-    card.className = 'yt-card';
-
-    // Thumb wrap
-    const thumbWrap = document.createElement('div');
-    thumbWrap.className = 'yt-thumb-wrap';
-    thumbWrap.dataset.vid   = vid;
-    thumbWrap.dataset.title = title;
-    thumbWrap.dataset.ch    = ch;
-    thumbWrap.dataset.views = views;
-    thumbWrap.dataset.pub   = pub;
-    thumbWrap.dataset.desc  = desc;
-    thumbWrap.onclick = function(){ playYtVideo(this); };
-
-    const img = document.createElement('img');
-    img.className = 'yt-thumb';
-    img.src = thumb;
-    img.loading = 'lazy';
-    img.onerror = function(){ this.src = fallbackThumb.replace('VIDEOID', vid); };
-    thumbWrap.appendChild(img);
-
-    if(dur){
-      const durBadge = document.createElement('div');
-      durBadge.style.cssText = 'position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px';
-      durBadge.textContent = dur;
-      thumbWrap.appendChild(durBadge);
-    }
-
-    const overlay = document.createElement('div');
-    overlay.className = 'yt-play-overlay';
-    overlay.innerHTML = '<div class="yt-play-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>';
-    thumbWrap.appendChild(overlay);
-    card.appendChild(thumbWrap);
-
-    // Card body
-    const body = document.createElement('div');
-    body.className = 'yt-card-body';
-
-    const titleEl = document.createElement('div');
-    titleEl.className = 'yt-card-title';
-    titleEl.textContent = title;
-    body.appendChild(titleEl);
-
-    const chEl = document.createElement('div');
-    chEl.className = 'yt-channel';
-    chEl.textContent = '📺 ' + ch;
-    body.appendChild(chEl);
-
-    const statsEl = document.createElement('div');
-    statsEl.className = 'yt-card-stats';
-    statsEl.innerHTML = '<span class="yt-views-badge">👁 '+formatViews(views)+' views</span>'
-      + (likes>0 ? '<span class="yt-date-badge">👍 '+formatViews(likes)+'</span>' : '')
-      + '<span class="yt-date-badge">📅 '+formatDate(pub)+'</span>';
-    body.appendChild(statsEl);
-
-    const btn = document.createElement('button');
-    btn.className = 'yt-cta-btn';
-    btn.textContent = '🎯 GAWING INSPIRATION PARA SA CONTENT KO →';
-    btn.onclick = function(e){
-      e.stopPropagation();
-      quickInspireEl(card.querySelector('.yt-thumb-wrap'));
-    };
-    body.appendChild(btn);
-    card.appendChild(body);
-    grid.appendChild(card);
-  });
+// ── FORMULA PREVIEW DATA ──
+function buildFormulaData(){
+  return {
+    hook: "Nagsimula agad sa relatable + emotional tension — walang intro, diretso sa problem.\n\n👉 Viewer agad napaisip: Uy parang nangyari na ito sakin ah...\n\n💡 Core technique: Relatable Hook + Conflict Opening\n\n👉 Sa short-form videos, mabilis mag-decide ang viewer kung mag-stay or scroll, kaya kailangan agad may hook sa first seconds",
+    emotionTags: ["Relatability","Frustration","Curiosity"],
+    emotionText: "Same experience · Ano gagawin niya? · Ano ending nito?\n\n👉 Relatable content = mataas share + comments",
+    template: "HOOK:\nAlam mo yung feeling na ______? 😩\n\nSCENE 1:\nNormal situation (relatable setup)\n\nSCENE 2:\nBiglang may problem / inconvenience\n\nSCENE 3:\nReaction ng character (frustrated / funny)\n\nSCENE 4:\nBuild tension (worse situation)\n\nSCENE 5:\nResolution / twist / realization\n\nENDING:\nFunny / satisfying / relatable ending\n\nCTA:\nRelate ka ba? Try mo gumawa ng ganito 👇"
+  };
 }
 
-
-function playYtVideo(el){
-  const d=el.dataset;
-  const videoId=d.vid,title=d.title,channel=d.ch,views=d.views,pub=d.pub,desc=d.desc;
-  ytCurrentVideoData={videoId,title,channel,views,description:desc,publishedAt:pub};
-  document.getElementById('ytPlayerTitle').textContent=title;
-  document.getElementById('ytIframe').src='https://www.youtube.com/embed/'+videoId+'?autoplay=1&rel=0';
-  document.getElementById('ytPlayerMeta').innerHTML='<span style="color:var(--pink);font-weight:700">📺 '+channel+'</span> &nbsp;&middot;&nbsp; 👁 '+formatViews(views)+' views &nbsp;&middot;&nbsp; 📅 '+formatDate(pub);
-  document.getElementById('ytPlayerModal').style.display='flex';
-  document.body.style.overflow='hidden';
+// ── FORMULA PANEL HTML ──
+function formulaPanel(videoId, platform){
+  const f = buildFormulaData();
+  const tags = f.emotionTags.map(function(t){ return '<span class="vd-etag">'+t+'</span>'; }).join('');
+  const hookHtml = f.hook.split('\n').join('<br>');
+  const emotHtml = f.emotionText.split('\n').join('<br>');
+  const tplHtml  = f.template.split('\n').join('<br>');
+  const vid = String(videoId).replace(/'/g,'');
+  const plt = String(platform).replace(/'/g,'');
+  return '<div class="vd-formula-section">'
+    +'<div class="vd-formula-label">🎣 WHY THIS HOOK WORKS</div>'
+    +'<div class="vd-formula-text">'+hookHtml+'</div>'
+    +'</div>'
+    +'<div class="vd-formula-section">'
+    +'<div class="vd-formula-label">🧠 EMOTION IT TRIGGERS</div>'
+    +'<div class="vd-etags">'+tags+'</div>'
+    +'<div class="vd-formula-text" style="margin-top:8px">'+emotHtml+'</div>'
+    +'</div>'
+    +'<div class="vd-formula-section">'
+    +'<div class="vd-formula-label">📋 PLUG-AND-PLAY TEMPLATE (COPYABLE)</div>'
+    +'<div class="vd-template">'+tplHtml+'</div>'
+    +'</div>'
+    +'<button class="vd-use-btn" onclick="vdUseFormula(\''+vid+'\',\''+plt+'\')">🚀 USE THIS FORMULA →</button>';
 }
 
-function quickInspireEl(el){
-  const d = el.dataset;
-  if(!d.vid){ console.error('No video data on element'); return; }
-  openSfModal(d.vid);
+// ── TAB SWITCHER ──
+function vdSwitchTab(tab, el){
+  document.querySelectorAll('.vd-panel').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.vd-tab').forEach(t=>t.classList.remove('active'));
+  const panel=document.getElementById('vdPanel-'+tab);
+  if(panel) panel.style.display='block';
+  if(el) el.classList.add('active');
 }
 
-function quickInspire(videoId,title,channel,views,pub,desc){
-  ytCurrentVideoData={videoId,title,channel,views,description:desc,publishedAt:pub};
-  confirmYtInspiration();
-}
+// ── YOUTUBE SEARCH ──
+let vdYtData = {};
 
-function closeYtPlayer(){
-  document.getElementById('ytIframe').src='';
-  document.getElementById('ytPlayerModal').style.display='none';
-  document.body.style.overflow='';
-  ytCurrentVideoData=null;
-}
+async function vdSearchYouTube(){
+  if(!userData){ showToast('❗ Mag-login muna!'); showGate(); return; }
+  const query = document.getElementById('vdYtInput').value.trim();
+  if(!query){ document.getElementById('vdYtInput').style.borderColor='#FF0000'; setTimeout(()=>document.getElementById('vdYtInput').style.borderColor='#2a2a2a',2000); return; }
 
-document.getElementById('ytPlayerModal').addEventListener('click',function(e){if(e.target===this)closeYtPlayer();});
+  const grid  = document.getElementById('vdYtGrid');
+  const load  = document.getElementById('vdYtLoading');
+  const errEl = document.getElementById('vdYtError');
+  grid.innerHTML=''; errEl.style.display='none';
+  load.style.display='block';
 
-function confirmYtInspiration(){
-  if(!ytCurrentVideoData) return;
-  const vid = ytCurrentVideoData.videoId;
-  closeYtPlayer();
-  openSfModal(vid);
-}
-
-// openSfModal and closeSfModal defined below in modal script block
-
-async function generateContentFromYT(video){
-  if(!userData){ showGate(); return; }
-  if(userData.verified===false && APPS_SCRIPT_URL){
-    showToast('📧 I-verify muna ang email mo!');
-    showVerifyPanel(userData.email);
+  // Check cache
+  const cached = getCache(query);
+  if(cached && cached.results.length>0){
+    document.getElementById('vdYtLoadingText').textContent='⚡ Loading from cache...';
+    await new Promise(r=>setTimeout(r,300));
+    load.style.display='none';
+    cached.results.forEach(v=>{vdYtData[v.id.videoId]=v; renderVdCard(v,'youtube',grid);});
     return;
   }
 
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  document.getElementById('genOutput').style.display = 'none';
-  document.getElementById('loadingDots').style.display = 'block';
-
-  if(userData.plan==='free'){
-    if(APPS_SCRIPT_URL){
-      try{
-        const res  = await fetch(APPS_SCRIPT_URL+'?action=checkLimit&email='+encodeURIComponent(userData.email));
-        const data = await res.json();
-        if(!data.canGenerate){ showToast('🔒 '+data.message); btn.disabled=false; document.getElementById('loadingDots').style.display='none'; return; }
-      }catch(e){
-        if(userData.ideasToday>=userData.ideasLimit){ showToast('🔒 Na-reach mo na ang 1 free idea mo ngayon. Bukas na ulit!'); btn.disabled=false; document.getElementById('loadingDots').style.display='none'; return; }
+  // Check server cache
+  if(APPS_SCRIPT_URL){
+    try{
+      const sr=await fetch(APPS_SCRIPT_URL+'?action=getYtCache&query='+encodeURIComponent(normQ(query)));
+      if(sr.ok){
+        const sd=await sr.json();
+        if(sd.found && sd.results && sd.results.length>0){
+          setCache(query, sd.results, sd.cacheType||'normal');
+          load.style.display='none';
+          sd.results.forEach(v=>{vdYtData[v.id.videoId]=v; renderVdCard(v,'youtube',grid);});
+          return;
+        }
       }
-    } else {
-      if(userData.ideasToday>=userData.ideasLimit){ showToast('🔒 Na-reach mo na ang 1 free idea mo ngayon. Bukas na ulit!'); btn.disabled=false; document.getElementById('loadingDots').style.display='none'; return; }
-    }
+    }catch(e){}
   }
 
-  const apiKey = getApiKey();
-  if(!apiKey){ showToast('⚠️ Generator not configured yet. Contact admin.'); btn.disabled=false; document.getElementById('loadingDots').style.display='none'; return; }
-
-  showToast('🚀 Nag-ge-generate base sa viral video...');
-
-  const ytPrompt = `You are a Filipino content creator making your own version of a viral video for your audience.
-
-VIRAL VIDEO NA PINANOOD MO:
-- Title: "${video.title}"
-- Channel: "${video.channel}"
-- Views: ${formatViews(video.views)} — proven na gumagana ang format na ito
-- Upload date: ${video.publishedAt ? new Date(video.publishedAt).toLocaleDateString('en-PH') : ''}
-- Description: "${(video.description||'').substring(0,300)}"
-
-GAWIN MO:
-1. Alamin kung anong hook, format, at emosyon ang gumana sa video
-2. Gumawa ng sariling Filipino version — hindi translation, sariling twist
-3. Gamitin ang same viral formula pero may Pinoy culture at pain points
-
-NICHE: ${selectedNiche}
-PLATFORM: ${document.getElementById('platform').value}
-
-TAGLISH TONE GUIDE:
-❌ Hindi: "Ang nilalaman na ito ay makatutulong sa iyo upang..."
-✅ Instead: "Ito yung makakatulong sayo kung..."
-❌ Hindi: "Narito ang mga pamamaraan upang..."
-✅ Instead: "Ganito mo gagawin:"
-❌ Hindi: "Lubos na nakakatulong ito sa iyong..."
-✅ Instead: "Malaking tulong to kung..."
-
-Sound like a real TikTok/Facebook user — short sentences, natural flow, may emosyon.
-Use: "Uy", "Grabe", "Di ba", "Eh kasi", "Kaya nga", "Actually", "Legit", "No joke", "Seryoso?", "Gets mo?", "Tapos", "Char", "Sayang", "Basta"
-
-Respond ONLY with valid JSON, no markdown, no backticks:
-{
-  "hook": "1-2 sentences. Scroll-stopping, directly inspired sa viral formula ng video. Natural Taglish, may emosyon.",
-  "concept": "2-3 sentences. Bakit gagana ito sa Pinoy audience? Specific na pain point. Short sentences.",
-  "script": "Slide-by-slide, 1-2 lines bawat slide:\\nSlide 1: [hook]\\nSlide 2: [relatable pain]\\nSlide 3: [reveal]\\nSlide 4: [tip/solusyon]\\nSlide 5: [CTA]",
-  "caption": "3-4 sentences. Parang FB post ng kaibigan mo. May emosyon, nagtatapos sa tanong o CTA.",
-  "cta": "Natural, hindi parang ad. Parang sinasabi mo talaga sa followers mo.",
-  "music": "Specific audio vibe na bagay sa content.",
-  "hashtags": "Minimum 10 hashtags — PH niche + trending + broad. Kasama #PostNaViral",
-  "viralScore": a number between 75 and 97
-}`;
+  if(isCapReached()){
+    load.style.display='none';
+    errEl.textContent='📦 Showing cached results. Fresh results update soon.';
+    errEl.style.display='block'; return;
+  }
 
   try{
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-haiku-4-5',
-        max_tokens:1200,
-        system:'You are a Filipino content creator who writes in natural Taglish. Rules: Use conversational Taglish — not formal, not deep Tagalog. Mix English + Tagalog naturally like how Filipinos speak online. Keep sentences short and easy to read. Avoid deep/old Tagalog words. Avoid robotic grammar. Sound like a real Facebook/TikTok user. Always respond with valid JSON only — no markdown, no backticks.',
-        messages:[{role:'user',content:ytPrompt}]
-      })
-    });
-    const data = await res.json();
-    if(data.error){ showToast('⚠️ API Error: '+data.error.message); btn.disabled=false; document.getElementById('loadingDots').style.display='none'; return; }
-    const raw   = data.content.find(b=>b.type==='text')?.text||'{}';
-    const clean = raw.replace(/```json|```/g,'').trim();
-    const idea  = JSON.parse(clean);
+    document.getElementById('vdYtLoadingText').textContent='Naghahanap ng viral videos...';
+    // search.list — IDs only (100 units)
+    const sp=new URLSearchParams({part:'id',q:query,type:'video',order:'viewCount',maxResults:'18',regionCode:'PH',key:YT_API_KEY});
+    const sr=await fetch('https://www.googleapis.com/youtube/v3/search?'+sp);
+    if(!sr.ok){ const e=await sr.json(); throw new Error(e?.error?.message||'Search failed'); }
+    const sd=await sr.json();
+    const ids=(sd.items||[]).map(i=>i.id.videoId).filter(Boolean);
+    if(!ids.length){ load.style.display='none'; errEl.textContent='⚠️ Walang videos found. Try ng ibang niche!'; errEl.style.display='block'; return; }
 
-    userData.ideasToday=(userData.ideasToday||0)+1;
-    localStorage.setItem('pnv_user',JSON.stringify(userData));
-    if(typeof updateNavAuth==='function') updateNavAuth();
+    // videos.list — full details (1 unit)
+    document.getElementById('vdYtLoadingText').textContent='Loading video details...';
+    const vp=new URLSearchParams({part:'snippet,statistics,contentDetails',id:ids.join(','),key:YT_API_KEY});
+    const vr=await fetch('https://www.googleapis.com/youtube/v3/videos?'+vp);
+    const vd=await vr.json();
 
-    idea._ytInspired = `📺 Inspired by: "${video.title}" (${formatViews(video.views)} views)`;
-    displayIdea(idea);
-
-    if(userData.plan==='free' && APPS_SCRIPT_URL){
-      fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'recordUse',email:userData.email})}).catch(()=>{});
+    const results=[];
+    for(const item of (vd.items||[])){
+      const views=parseInt(item.statistics?.viewCount||0);
+      if(views<YT_MIN_VIEWS) continue;
+      const thumbs=item.snippet?.thumbnails||{};
+      const thumb=(thumbs.maxres||thumbs.high||thumbs.medium||thumbs.default||{}).url||'https://i.ytimg.com/vi/'+item.id+'/hqdefault.jpg';
+      const entry={
+        id:{videoId:item.id},
+        snippet:{title:item.snippet?.title||'Video',channelTitle:item.snippet?.channelTitle||'YouTube',thumbnails:{default:{url:thumb},medium:{url:thumb}},publishedAt:item.snippet?.publishedAt||''},
+        _stats:{viewCount:views,likeCount:parseInt(item.statistics?.likeCount||0),duration:item.contentDetails?.duration||''}
+      };
+      results.push(entry);
+      vdYtData[item.id]=entry;
     }
-  }catch(e){
-    console.error('YT generate error:',e);
-    showToast('⚠️ May error. Try ulit!');
-  }
 
-  btn.disabled=false;
-  document.getElementById('loadingDots').style.display='none';
+    if(!results.length){ load.style.display='none'; errEl.textContent='⚠️ Walang 1M+ views videos sa niche na yan. Try ng ibang keyword!'; errEl.style.display='block'; return; }
+
+    setCache(query,results,'normal');
+    incDailyCap();
+    if(APPS_SCRIPT_URL) fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveYtCache',query:normQ(query),cacheType:'normal',results:results.slice(0,20),cachedAt:Date.now(),expiresAt:Date.now()+YT_CACHE_TTL.normal})}).catch(()=>{});
+
+    load.style.display='none';
+    results.forEach(v=>renderVdCard(v,'youtube',grid));
+
+  }catch(e){
+    load.style.display='none';
+    errEl.textContent='⚠️ '+e.message+'. Try ulit!';
+    errEl.style.display='block';
+  }
 }
 
+// ── RENDER VIDEO CARD ──
+function renderVdCard(video, platform, grid){
+  const vid   = video.id.videoId;
+  const title = video.snippet.title||'Video';
+  const ch    = video.snippet.channelTitle||'YouTube';
+  const thumb = video.snippet.thumbnails?.medium?.url||video.snippet.thumbnails?.default?.url||'https://i.ytimg.com/vi/'+vid+'/hqdefault.jpg';
+  const stats = video._stats||{};
+  const views = stats.viewCount||0;
+  const dur   = parseDur(stats.duration||'');
+  const pub   = video.snippet.publishedAt||'';
+
+  const card  = document.createElement('div');
+  card.className = 'vd-card';
+
+  // Thumb
+  const tw = document.createElement('div');
+  tw.className = 'vd-thumb-wrap';
+  tw.dataset.vid = vid; tw.dataset.title=title; tw.dataset.ch=ch; tw.dataset.views=views; tw.dataset.pub=pub;
+  tw.onclick = function(){ vdPlayVideo(this); };
+
+  const img = document.createElement('img');
+  img.className='vd-thumb'; img.src=thumb; img.loading='lazy';
+  img.onerror=function(){ this.src='https://i.ytimg.com/vi/'+vid+'/hqdefault.jpg'; };
+  tw.appendChild(img);
+
+  if(dur){
+    const db=document.createElement('div');
+    db.style.cssText='position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px';
+    db.textContent=dur; tw.appendChild(db);
+  }
+  const ov=document.createElement('div');
+  ov.className='vd-play-overlay';
+  ov.innerHTML='<div class="vd-play-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>';
+  tw.appendChild(ov);
+  card.appendChild(tw);
+
+  // Body
+  const body=document.createElement('div');
+  body.className='vd-card-body';
+
+  const tEl=document.createElement('div'); tEl.className='vd-card-title'; tEl.textContent=title;
+  const cEl=document.createElement('div'); cEl.className='vd-channel'; cEl.textContent='📺 '+ch;
+  const sEl=document.createElement('div'); sEl.className='vd-stats';
+  sEl.innerHTML='<span class="vd-views">👁 '+fmtViews(views)+' views</span><span style="font-size:9px;color:#555">📅 '+fmtDate(pub)+'</span>';
+
+  const stealBtn=document.createElement('button');
+  stealBtn.className='vd-steal-btn';
+  stealBtn.textContent='🔥 STEAL THIS FORMULA';
+  stealBtn.onclick=function(e){
+    e.stopPropagation();
+    // Toggle formula panel
+    let fp=card.querySelector('.vd-formula');
+    if(!fp){
+      fp=document.createElement('div');
+      fp.className='vd-formula';
+      fp.innerHTML=formulaPanel(vid, platform);
+      card.appendChild(fp);
+    }
+    fp.classList.toggle('show');
+    if(fp.classList.contains('show')) fp.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+
+  body.appendChild(tEl); body.appendChild(cEl); body.appendChild(sEl); body.appendChild(stealBtn);
+  card.appendChild(body);
+  grid.appendChild(card);
+}
+
+// ── PLAY VIDEO (YouTube) ──
+let vdCurrentVideoId = null;
+function vdPlayVideo(el){
+  const d=el.dataset;
+  vdCurrentVideoId=d.vid;
+  document.getElementById('vdPlayerTitle').textContent=d.title;
+  document.getElementById('vdPlayerIframe').src='https://www.youtube.com/embed/'+d.vid+'?autoplay=1&rel=0';
+  document.getElementById('vdPlayerMeta').innerHTML='<span style="color:var(--pink);font-weight:700">📺 '+d.ch+'</span> · 👁 '+fmtViews(d.views)+' views · 📅 '+fmtDate(d.pub);
+  document.getElementById('vdPlayerModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function vdClosePlayer(){
+  document.getElementById('vdPlayerIframe').src='';
+  document.getElementById('vdPlayerModal').style.display='none';
+  document.body.style.overflow='';
+}
+function vdStealFromPlayer(){
+  const vid=vdCurrentVideoId;
+  vdClosePlayer();
+  openSfModal(vid);
+}
+document.addEventListener('DOMContentLoaded',function(){
+  const pm=document.getElementById('vdPlayerModal');
+  if(pm) pm.addEventListener('click',function(e){if(e.target===this)vdClosePlayer();});
+});
+
+// ── USE FORMULA (opens Steal Formula AI) ──
+function vdUseFormula(videoIdOrUrl, platform){
+  openSfModal(videoIdOrUrl);
+}
+
+// ── TIKTOK EMBED ──
+function vdEmbedTikTok(){
+  if(!userData){ showToast('❗ Mag-login muna!'); showGate(); return; }
+  const url=document.getElementById('vdTtInput').value.trim();
+  const errEl=document.getElementById('vdTtError');
+  const resultEl=document.getElementById('vdTtResult');
+  errEl.style.display='none'; resultEl.style.display='none';
+
+  if(!url||!url.includes('tiktok.com')){
+    errEl.textContent='❗ I-paste ang valid TikTok URL. Halimbawa: https://www.tiktok.com/@username/video/123...';
+    errEl.style.display='block'; return;
+  }
+
+  const vidMatch=url.match(/\/video\/(\d+)/);
+  const videoId=vidMatch?vidMatch[1]:'0';
+
+  resultEl.innerHTML=`
+    <div class="vd-embed-result">
+      <div style="display:flex;justify-content:center">
+        <blockquote class="tiktok-embed" cite="${url}" data-video-id="${videoId}" style="max-width:325px;min-width:325px;border:none;margin:0"></blockquote>
+      </div>
+      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:12px;padding:16px">
+        ${formulaPanel(url,'tiktok')}
+      </div>
+    </div>`;
+  resultEl.style.display='block';
+
+  // Load TikTok embed.js
+  const old=document.getElementById('ttScript');
+  if(old) old.remove();
+  const s=document.createElement('script');
+  s.id='ttScript'; s.src='https://www.tiktok.com/embed.js'; s.async=true;
+  document.body.appendChild(s);
+  resultEl.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── FACEBOOK EMBED ──
+function vdEmbedFacebook(){
+  if(!userData){ showToast('❗ Mag-login muna!'); showGate(); return; }
+  const url=document.getElementById('vdFbInput').value.trim();
+  const errEl=document.getElementById('vdFbError');
+  const resultEl=document.getElementById('vdFbResult');
+  errEl.style.display='none'; resultEl.style.display='none';
+
+  if(!url||!url.includes('facebook.com')){
+    errEl.textContent='❗ I-paste ang valid Facebook URL. Halimbawa: https://www.facebook.com/reel/123...';
+    errEl.style.display='block'; return;
+  }
+
+  resultEl.innerHTML=`
+    <div class="vd-embed-result">
+      <div style="display:flex;justify-content:center">
+        <div class="fb-video" data-href="${url}" data-width="400" data-show-text="false" data-allowfullscreen="true"></div>
+      </div>
+      <div style="background:#0d0d0d;border:1px solid #1e1e1e;border-radius:12px;padding:16px">
+        ${formulaPanel(url,'facebook')}
+      </div>
+    </div>`;
+  resultEl.style.display='block';
+
+  if(window.FB){ window.FB.XFBML.parse(resultEl); }
+  resultEl.scrollIntoView({behavior:'smooth',block:'start'});
+}
 </script>
 
 
@@ -4129,6 +3739,198 @@ function closeSfModal(){
   // Auto-run on load - read v= param from main site if present
   // auto-run removed
 
+</script>
+
+
+<script>
+// ═══════════════════════════════════════════════
+// MAIN TAB SWITCHER (YouTube / TikTok / Facebook)
+// ═══════════════════════════════════════════════
+function switchMainTab(tab, el) {
+  document.querySelectorAll('.main-tab-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.yt-tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById('mainTab-' + tab);
+  if (panel) panel.style.display = 'block';
+  if (el) el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// FORMULA PREVIEW — shown under each TikTok/FB video
+// ═══════════════════════════════════════════════
+function buildFormulaPreview(url, platform) {
+  return `
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:#FF1B8D;font-weight:800;letter-spacing:2px;margin-bottom:6px">🔥 VIRAL FORMULA DETECTED</div>
+      <div style="font-size:13px;color:#bbb;line-height:1.6">Nagsimula agad sa relatable + emotional tension — walang intro, diretso sa problem.</div>
+    </div>
+    <div style="margin-bottom:14px;background:rgba(255,27,141,0.06);border:1px solid rgba(255,27,141,0.15);border-radius:8px;padding:12px">
+      <div style="font-size:10px;color:#FFD700;font-weight:800;letter-spacing:1px;margin-bottom:6px">🧠 EMOTION IT TRIGGERS</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="background:rgba(255,27,141,0.1);border:1px solid rgba(255,27,141,0.2);color:#FF1B8D;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">Relatability</span>
+        <span style="background:rgba(255,27,141,0.1);border:1px solid rgba(255,27,141,0.2);color:#FF1B8D;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">Curiosity</span>
+        <span style="background:rgba(255,27,141,0.1);border:1px solid rgba(255,27,141,0.2);color:#FF1B8D;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">Frustration</span>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;background:rgba(255,215,0,0.04);border:1.5px dashed rgba(255,215,0,0.2);border-radius:8px;padding:12px">
+      <div style="font-size:10px;color:#FFD700;font-weight:800;letter-spacing:1px;margin-bottom:8px">📋 PLUG-AND-PLAY TEMPLATE</div>
+      <div style="font-size:12px;color:#888;line-height:1.8;font-style:italic">
+        HOOK: <span style="color:#FFD700">"Alam mo yung feeling na ______? 😩"</span><br>
+        SCENE 1: Normal situation (relatable setup)<br>
+        SCENE 2: Biglang may problem<br>
+        SCENE 3: Reaction (frustrated / funny)<br>
+        SCENE 4: Build tension<br>
+        ENDING: Funny / satisfying / relatable<br>
+        CTA: <span style="color:#FFD700">"Relate ka ba? Try mo 👇"</span>
+      </div>
+    </div>
+    <button onclick="openSfModal('${url}')" style="width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;transition:.2s" onmouseover="this.style.background='#e00070'" onmouseout="this.style.background='var(--pink)'">
+      🚀 USE THIS FORMULA →
+    </button>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// TIKTOK EMBED
+// ═══════════════════════════════════════════════
+function extractTikTokId(url) {
+  const m = url.match(/\/video\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+async function embedTikTok() {
+  const url = document.getElementById('ttUrlInput').value.trim();
+  const errEl = document.getElementById('ttError');
+  const wrapEl = document.getElementById('ttEmbedWrap');
+  const loadEl = document.getElementById('ttLoading');
+  errEl.style.display = 'none';
+  wrapEl.style.display = 'none';
+
+  if (!url || !url.includes('tiktok.com')) {
+    errEl.textContent = '❗ I-paste ang valid TikTok URL. Example: https://www.tiktok.com/@username/video/123...';
+    errEl.style.display = 'block'; return;
+  }
+
+  const videoId = extractTikTokId(url);
+  if (!videoId) {
+    // Try oEmbed to get video ID
+    loadEl.style.display = 'block';
+    try {
+      const oembed = await fetch('https://www.tiktok.com/oembed?url=' + encodeURIComponent(url));
+      const data = await oembed.json();
+      loadEl.style.display = 'none';
+      if (data.html) {
+        renderTikTok(url, data.html);
+      } else {
+        errEl.textContent = '⚠️ Hindi ma-embed ang video na ito. Siguraduhing public ang TikTok video.';
+        errEl.style.display = 'block';
+      }
+    } catch(e) {
+      loadEl.style.display = 'none';
+      errEl.textContent = '⚠️ Error loading TikTok. Try ulit — siguraduhing public ang video.';
+      errEl.style.display = 'block';
+    }
+    return;
+  }
+
+  // Direct embed using blockquote format
+  const username = url.match(/@([^/]+)/)?.[1] || 'user';
+  const embedHtml = `<blockquote class="tiktok-embed" cite="${url}" data-video-id="${videoId}" style="max-width:325px;min-width:325px;border:none;margin:0"></blockquote>`;
+  renderTikTok(url, embedHtml);
+}
+
+function renderTikTok(url, embedHtml) {
+  const embedEl = document.getElementById('ttEmbed');
+  const previewEl = document.getElementById('ttFormulaPreview');
+  const wrapEl = document.getElementById('ttEmbedWrap');
+
+  embedEl.innerHTML = embedHtml;
+  previewEl.innerHTML = buildFormulaPreview(url, 'tiktok');
+  wrapEl.style.display = 'block';
+
+  // Load TikTok embed script
+  const existing = document.getElementById('ttEmbedScript');
+  if (existing) existing.remove();
+  const s = document.createElement('script');
+  s.id = 'ttEmbedScript';
+  s.src = 'https://www.tiktok.com/embed.js';
+  s.async = true;
+  document.body.appendChild(s);
+
+  wrapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════════
+// FACEBOOK REELS EMBED
+// ═══════════════════════════════════════════════
+function embedFacebook() {
+  const url = document.getElementById('fbUrlInput').value.trim();
+  const errEl = document.getElementById('fbError');
+  const wrapEl = document.getElementById('fbEmbedWrap');
+  errEl.style.display = 'none';
+  wrapEl.style.display = 'none';
+
+  if (!url || !url.includes('facebook.com')) {
+    errEl.textContent = '❗ I-paste ang valid Facebook URL. Example: https://www.facebook.com/reel/123...';
+    errEl.style.display = 'block'; return;
+  }
+
+  const embedEl = document.getElementById('fbEmbed');
+  const previewEl = document.getElementById('fbFormulaPreview');
+
+  embedEl.innerHTML = `<div class="fb-video"
+    data-href="${url}"
+    data-width="400"
+    data-show-text="false"
+    data-allowfullscreen="true">
+  </div>`;
+
+  previewEl.innerHTML = buildFormulaPreview(url, 'facebook');
+  wrapEl.style.display = 'block';
+
+  // Re-parse FB embeds
+  if (window.FB) {
+    window.FB.XFBML.parse(embedEl);
+  } else {
+    // FB SDK not loaded yet — wait for it
+    window.fbAsyncInit = function() {
+      FB.init({ xfbml: true, version: 'v20.0' });
+    };
+  }
+
+  wrapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════════
+// Override openSfModal to also accept full URLs
+// (TikTok / FB pass URL instead of videoId)
+// ═══════════════════════════════════════════════
+const _origOpenSfModal = openSfModal;
+function openSfModal(videoIdOrUrl) {
+  // If it's a TikTok or FB URL, set it directly in the sf input
+  if (videoIdOrUrl && (videoIdOrUrl.includes('tiktok.com') || videoIdOrUrl.includes('facebook.com'))) {
+    try {
+      var sf_f = null; var sf_v = ''; var sf_t = '';
+      sf_formulaData = null; sf_videoTitle = ''; sf_templateRaw = '';
+      const m = document.getElementById('sfModal');
+      if (!m) { console.error('sfModal missing'); return; }
+      document.getElementById('sf_urlInput').value = videoIdOrUrl;
+      const rw = document.getElementById('sf_resultsWrap');
+      const gp = document.getElementById('sf_genPanel');
+      const mb = document.getElementById('sf_musicBlock');
+      const eb = document.getElementById('sf_errorBox');
+      if (rw) rw.classList.remove('show');
+      if (gp) gp.classList.remove('show');
+      if (mb) mb.style.display = 'none';
+      if (eb) eb.classList.remove('show');
+      m.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      setTimeout(function() { sf_analyzeVideo(); }, 400);
+    } catch(e) { console.error('openSfModal URL error:', e); }
+  } else {
+    // YouTube video ID — use original
+    _origOpenSfModal(videoIdOrUrl);
+  }
+}
 </script>
 
 </body>
