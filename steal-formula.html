@@ -787,28 +787,77 @@
     return null;
   }
 
+  const YT_DATA_KEY = 'AIzaSyB4nIliTPi769ZySS38aZS-WKKLaeolTuo';
+
   async function fetchTitle(vid) {
-    // Try multiple oEmbed endpoints
-    const endpoints = [
-      'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json',
-      'https://noembed.com/embed?url=https://www.youtube.com/watch?v=' + vid,
-    ];
-    for (const ep of endpoints) {
-      try {
-        const r = await fetch(ep);
-        if (r.ok) {
-          const d = await r.json();
-          const title = d.title || d.name || '';
-          const author = d.author_name || d.provider_name || '';
-          if (title && title !== 'YouTube Video') return { title, author };
-        }
-      } catch(e) {}
+    // Use pre-loaded title from URL params if available (passed from index.html)
+    if (window._preloadedTitle) {
+      const t = window._preloadedTitle;
+      const a = window._preloadedAuthor || '';
+      window._preloadedTitle  = null; // use once
+      window._preloadedAuthor = null;
+      console.log('Using pre-loaded title:', t);
+      return { title: t, author: a };
     }
-    // Fallback — use video ID as reference
-    return { title: 'YouTube Video (ID: ' + vid + ')', author: '' };
+
+    // Try 4 different methods — first success wins
+    const ytUrl = 'https://www.youtube.com/watch?v=' + vid;
+
+    // Method 1: noembed.com (no CORS issues, no API key needed)
+    try {
+      const r = await fetch('https://noembed.com/embed?url=' + encodeURIComponent(ytUrl));
+      if (r.ok) {
+        const d = await r.json();
+        if (d.title && d.title !== 'YouTube Video') {
+          console.log('Title from noembed:', d.title);
+          return { title: d.title, author: d.author_name || '' };
+        }
+      }
+    } catch(e) { console.log('noembed failed:', e.message); }
+
+    // Method 2: YouTube oEmbed (json format)
+    try {
+      const r = await fetch('https://www.youtube.com/oembed?url=' + encodeURIComponent(ytUrl) + '&format=json');
+      if (r.ok) {
+        const d = await r.json();
+        if (d.title) {
+          console.log('Title from oembed:', d.title);
+          return { title: d.title, author: d.author_name || '' };
+        }
+      }
+    } catch(e) { console.log('oembed failed:', e.message); }
+
+    // Method 3: YouTube Data API (may be blocked by referrer restriction)
+    try {
+      const r = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + vid + '&key=' + YT_DATA_KEY);
+      if (r.ok) {
+        const d = await r.json();
+        const item = (d.items || [])[0];
+        if (item) {
+          console.log('Title from YT API:', item.snippet.title);
+          return { title: item.snippet.title || '', author: item.snippet.channelTitle || '' };
+        }
+      }
+    } catch(e) { console.log('YT API failed:', e.message); }
+
+    // Method 4: CORS proxy + oEmbed
+    try {
+      const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://www.youtube.com/oembed?url=' + encodeURIComponent(ytUrl) + '&format=json');
+      const r = await fetch(proxyUrl);
+      if (r.ok) {
+        const d = await r.json();
+        if (d.title) {
+          console.log('Title from proxy:', d.title);
+          return { title: d.title, author: d.author_name || '' };
+        }
+      }
+    } catch(e) { console.log('proxy failed:', e.message); }
+
+    console.log('All title methods failed for:', vid);
+    return { title: '', author: '' };
   }
 
-  const SITE_API_KEY = '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';
+  const SITE_API_KEY = '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';
   function getApiKey() { return SITE_API_KEY || localStorage.getItem('pnv_api_key') || ''; }
 
   async function callClaude(systemPrompt, userPrompt) {
@@ -922,17 +971,18 @@
 
     const platform = isTikTok ? 'TikTok' : isFB ? 'Facebook Reels' : 'YouTube';
 
-    const sysPrompt = 'You are a viral content strategist for Filipino creators. Return ONLY a raw JSON object, no markdown, no backticks, no extra text. Use this exact structure: {"intro":"one punchy sentence max 15 words","hookAnalysis":"why the hook works psychologically max 40 words","emotionAnalysis":"what emotion it triggers and why people share max 40 words","emotionTags":["Tag1","Tag2","Tag3"],"templateExplain":"describe the content structure in max 15 words","template":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION].","templateRaw":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION]."}';
+    console.log('Video Title:', videoTitle, '| Channel:', meta.author, '| URL:', url);
 
-    // Build a richer prompt with video URL for context
+    const sysPrompt = 'You are a viral content strategist for Filipino creators. You will be given a video title and channel. Your job is to decode WHY that specific video went viral — analyze the exact title, the hook technique used, and the emotion it triggers. Be SPECIFIC to the actual title given, not generic. Return ONLY a raw JSON object, no markdown, no backticks. Structure: {"intro":"one punchy sentence about THIS specific video max 15 words","hookAnalysis":"why THIS specific hook/title works psychologically max 40 words — be specific to the actual title","emotionAnalysis":"what emotion THIS video triggers and why Filipinos would share it max 40 words","emotionTags":["Tag1","Tag2","Tag3"],"templateExplain":"describe THIS video content structure in max 15 words","template":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION].","templateRaw":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION]."}';
+
     const userPrompt = 'Decode the viral formula of this ' + platform + ' video.\n\n'
-      + 'Video URL: ' + url + '\n'
-      + 'Title: "' + videoTitle + '"\n'
-      + 'Creator/Channel: ' + (meta.author || 'Unknown') + '\n'
-      + 'Platform: ' + platform + '\n\n'
-      + 'Based on the title and platform, analyze: what psychological hook does this use? What emotion does it trigger? Why would Filipino viewers share this?\n'
-      + 'Create a Taglish plug-and-play template na pwedeng gamitin ng Filipino content creators para sa kanilang niche.\n'
-      + 'Be specific — kung may makita kang pattern sa title (hugot, storytime, tips, challenge, etc.), i-decode yun.';
+      + 'VIDEO TITLE: "' + videoTitle + '"\n'
+      + 'CHANNEL/CREATOR: ' + (meta.author || 'Unknown') + '\n'
+      + 'PLATFORM: ' + platform + '\n'
+      + 'VIDEO URL: ' + url + '\n\n'
+      + 'IMPORTANT: Analyze specifically based on the video title above. Do NOT say "without video access" — use the title and channel name to decode the formula. '
+      + 'The title tells you the hook type (curiosity gap, listicle, how-to, storytime, challenge, reaction, etc.). '
+      + 'Create a Taglish plug-and-play template inspired by this specific video that Filipino creators can use.';
 
     try {
       const json = await callClaude(sysPrompt, userPrompt);
@@ -1053,7 +1103,24 @@
   window.addEventListener('load', function() {
     const params = new URLSearchParams(window.location.search);
     const preload = params.get('v');
-    if (preload) document.getElementById('urlInput').value = decodeURIComponent(preload);
+    const preTitle  = params.get('title')  ? decodeURIComponent(params.get('title'))  : '';
+    const preAuthor = params.get('author') ? decodeURIComponent(params.get('author')) : '';
+
+    if (preload) {
+      const decoded = decodeURIComponent(preload);
+      const isId = /^[a-zA-Z0-9_-]{11}$/.test(decoded);
+      document.getElementById('urlInput').value = isId
+        ? 'https://www.youtube.com/watch?v=' + decoded
+        : decoded;
+    }
+
+    // Pre-fill title if passed from index.html
+    if (preTitle) {
+      window._preloadedTitle  = preTitle;
+      window._preloadedAuthor = preAuthor;
+      console.log('Pre-loaded title from URL:', preTitle, '| Author:', preAuthor);
+    }
+
     setTimeout(analyzeVideo, 500);
   });
 </script>

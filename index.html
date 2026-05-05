@@ -797,7 +797,7 @@ const _origHideGate = typeof hideGate === 'function' ? hideGate : null;
       </div>
       <div style="padding:20px">
         <div id="vdPlayerMeta" style="font-size:12px;color:#999;margin-bottom:16px"></div>
-        <button onclick="vdStealFromPlayer()" style="width:100%;padding:15px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer">🔥 STEAL THIS FORMULA →</button>
+        <button onclick="vdStealFromPlayer()" style="width:100%;padding:15px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer">📋 COPY THIS FORMULA →</button>
         <button onclick="vdClosePlayer()" style="width:100%;padding:10px;background:transparent;color:#666;border:1px solid #2a2a2a;border-radius:10px;font-size:13px;cursor:pointer;margin-top:8px">Hindi pa muna</button>
       </div>
     </div>
@@ -924,39 +924,17 @@ function parseDur(iso){
   return mn+':'+(s<10?'0':'')+s;
 }
 
-// ── FORMULA PREVIEW DATA ──
-function buildFormulaData(){
-  return {
-    hook: "Nagsimula agad sa relatable + emotional tension — walang intro, diretso sa problem.\n\n👉 Viewer agad napaisip: Uy parang nangyari na ito sakin ah...\n\n💡 Core technique: Relatable Hook + Conflict Opening\n\n👉 Sa short-form videos, mabilis mag-decide ang viewer kung mag-stay or scroll, kaya kailangan agad may hook sa first seconds",
-    emotionTags: ["Relatability","Frustration","Curiosity"],
-    emotionText: "Same experience · Ano gagawin niya? · Ano ending nito?\n\n👉 Relatable content = mataas share + comments",
-    template: "HOOK:\nAlam mo yung feeling na ______? 😩\n\nSCENE 1:\nNormal situation (relatable setup)\n\nSCENE 2:\nBiglang may problem / inconvenience\n\nSCENE 3:\nReaction ng character (frustrated / funny)\n\nSCENE 4:\nBuild tension (worse situation)\n\nSCENE 5:\nResolution / twist / realization\n\nENDING:\nFunny / satisfying / relatable ending\n\nCTA:\nRelate ka ba? Try mo gumawa ng ganito 👇"
-  };
-}
+
 
 // ── FORMULA PANEL HTML ──
 function formulaPanel(videoId, platform){
-  const f = buildFormulaData();
-  const tags = f.emotionTags.map(function(t){ return '<span class="vd-etag">'+t+'</span>'; }).join('');
-  const hookHtml = f.hook.split('\n').join('<br>');
-  const emotHtml = f.emotionText.split('\n').join('<br>');
-  const tplHtml  = f.template.split('\n').join('<br>');
   const vid = String(videoId).replace(/'/g,'');
-  const plt = String(platform).replace(/'/g,'');
-  return '<div class="vd-formula-section">'
-    +'<div class="vd-formula-label">🎣 WHY THIS HOOK WORKS</div>'
-    +'<div class="vd-formula-text">'+hookHtml+'</div>'
-    +'</div>'
-    +'<div class="vd-formula-section">'
-    +'<div class="vd-formula-label">🧠 EMOTION IT TRIGGERS</div>'
-    +'<div class="vd-etags">'+tags+'</div>'
-    +'<div class="vd-formula-text" style="margin-top:8px">'+emotHtml+'</div>'
-    +'</div>'
-    +'<div class="vd-formula-section">'
-    +'<div class="vd-formula-label">📋 PLUG-AND-PLAY TEMPLATE (COPYABLE)</div>'
-    +'<div class="vd-template">'+tplHtml+'</div>'
-    +'</div>'
-    +'<button class="vd-use-btn" onclick="window.open(\'steal-formula.html?v=\'+encodeURIComponent(\''+vid+'\'),\'_blank\')">🚀 USE THIS FORMULA →</button>';
+  const fullUrl = platform === 'youtube'
+    ? 'https://www.youtube.com/watch?v=' + vid
+    : vid;
+  return '<button class="vd-use-btn" onclick="window.open(\'steal-formula.html?v=\'+encodeURIComponent(\''+fullUrl+'\'),\'_blank\')">'
+    +'📋 COPY THIS FORMULA →'
+    +'</button>';
 }
 
 // ── TAB SWITCHER ──
@@ -1108,19 +1086,28 @@ function renderVdCard(video, platform, grid){
 
   const stealBtn=document.createElement('button');
   stealBtn.className='vd-steal-btn';
-  stealBtn.textContent='🔥 STEAL THIS FORMULA';
-  stealBtn.onclick=function(e){
+  stealBtn.textContent='📋 COPY THIS FORMULA';
+  stealBtn.onclick=async function(e){
     e.stopPropagation();
-    // Toggle formula panel
-    let fp=card.querySelector('.vd-formula');
-    if(!fp){
-      fp=document.createElement('div');
-      fp.className='vd-formula';
-      fp.innerHTML=formulaPanel(vid, platform);
-      card.appendChild(fp);
+    stealBtn.textContent='Loading...';
+    stealBtn.disabled=true;
+    const fullUrl='https://www.youtube.com/watch?v='+vid;
+    // Fetch title here (index.html has no CSP restrictions)
+    let title='', author='';
+    try {
+      const r=await fetch('https://noembed.com/embed?url='+encodeURIComponent(fullUrl));
+      if(r.ok){ const d=await r.json(); title=d.title||''; author=d.author_name||''; }
+    } catch(e2){}
+    if(!title){
+      try {
+        const r=await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id='+vid+'&key='+YT_API_KEY);
+        if(r.ok){ const d=await r.json(); const item=(d.items||[])[0]; if(item){ title=item.snippet.title||''; author=item.snippet.channelTitle||''; } }
+      } catch(e2){}
     }
-    fp.classList.toggle('show');
-    if(fp.classList.contains('show')) fp.scrollIntoView({behavior:'smooth',block:'nearest'});
+    stealBtn.textContent='📋 COPY THIS FORMULA';
+    stealBtn.disabled=false;
+    const params='v='+encodeURIComponent(fullUrl)+'&title='+encodeURIComponent(title)+'&author='+encodeURIComponent(author);
+    window.open('steal-formula.html?'+params,'_blank');
   };
 
   body.appendChild(tEl); body.appendChild(cEl); body.appendChild(sEl); body.appendChild(stealBtn);
@@ -1586,7 +1573,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHS8DVmH5XNqzZ
 // ═══════════════════════════════════════════════
 // API KEY — Paste your key below (visitors never see this)
 // ═══════════════════════════════════════════════
-const SITE_API_KEY = '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'; // ← paste your sk-ant-... key here ONCE
+const SITE_API_KEY = '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'; // ← paste your sk-ant-... key here ONCE
 
 function getApiKey(){ return SITE_API_KEY || localStorage.getItem('pnv_api_key') || ''; }
 function saveApiKey(){
