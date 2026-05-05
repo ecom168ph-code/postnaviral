@@ -148,21 +148,21 @@ nav ul li a:hover{color:var(--pink)}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 
 /* REGISTER GATE */
-.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
-.gate-box{background:var(--card);border:2px solid var(--pink);border-radius:24px;max-width:440px;width:100%;padding:28px 28px 32px;text-align:center;animation:slideUp .4s ease;margin:auto}
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:12px 16px 40px;overflow-y:auto}
+.gate-box{background:var(--card);border:2px solid var(--pink);border-radius:20px;max-width:420px;width:100%;padding:20px 22px 24px;text-align:center;animation:slideUp .4s ease;margin:auto}
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
-.gate-emoji{font-size:36px;margin-bottom:10px}
-.gate-box h2{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--pink);margin-bottom:6px}
-.gate-box p{font-size:13px;color:#bbb;line-height:1.5;margin-bottom:14px}
-.gate-form{display:flex;flex-direction:column;gap:8px;text-align:left}
-.gate-form label{font-size:11px;color:var(--pink);font-weight:800;letter-spacing:2px}
-.gate-form input{background:#111;border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;outline:none;width:100%;transition:.2s}
+.gate-emoji{font-size:28px;margin-bottom:6px}
+.gate-box h2{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--pink);margin-bottom:4px}
+.gate-box p{font-size:12px;color:#bbb;line-height:1.4;margin-bottom:10px}
+.gate-form{display:flex;flex-direction:column;gap:7px;text-align:left}
+.gate-form label{font-size:10px;color:var(--pink);font-weight:800;letter-spacing:1.5px}
+.gate-form input{background:#111;border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:13px;outline:none;width:100%;transition:.2s}
 .gate-form input:focus{border-color:var(--pink)}
-.gate-register-btn{background:var(--pink);color:#fff;padding:12px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;border:none;cursor:pointer;width:100%;transition:.2s;margin-top:4px}
+.gate-register-btn{background:var(--pink);color:#fff;padding:11px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1.5px;border:none;cursor:pointer;width:100%;transition:.2s;margin-top:4px}
 .gate-register-btn:hover{background:#e00070}
 .gate-login-link{font-size:13px;color:var(--muted);margin-top:12px}
 .gate-login-link a{color:var(--pink);cursor:pointer;font-weight:700}
-.gate-perks{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.gate-perks{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
 .gate-perk{background:rgba(255,27,141,0.08);border:1px solid rgba(255,27,141,0.2);color:#ccc;font-size:11px;padding:5px 12px;border-radius:50px;font-weight:700}
 
 /* COMMUNITY SCROLL */
@@ -216,8 +216,8 @@ nav ul li a:hover{color:var(--pink)}
 .pay-copy:hover{background:rgba(255,27,141,0.25)}
 
 /* GATE TABS */
-.gate-tabs{display:flex;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.gate-tab{flex:1;padding:10px;text-align:center;font-size:12px;font-weight:800;cursor:pointer;transition:.2s;color:var(--muted);background:#111}
+.gate-tabs{display:flex;margin-bottom:10px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.gate-tab{flex:1;padding:8px 6px;text-align:center;font-size:11px;font-weight:800;cursor:pointer;transition:.2s;color:var(--muted);background:#111}
 .gate-tab.active{background:var(--pink);color:#fff}
 
 /* ACCESS CODE */
@@ -372,12 +372,12 @@ footer{padding:24px 40px;border-top:1px solid var(--border);display:flex;justify
       </div>
 
       <!-- Google Sign-In Button -->
-      <div id="googleSignInBtn" style="margin-bottom:16px">
+      <div id="googleSignInBtn" style="margin-bottom:10px">
         <div id="g_id_onload" data-client_id="825065340823-gbr1vd12ig4qurss30dct2m2f769fmtc.apps.googleusercontent.com" data-callback="handleGoogleCredential" data-auto_prompt="false"></div>
         <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_black" data-text="signup_with" data-shape="pill" data-logo_alignment="left" data-width="360"></div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="flex:1;height:1px;background:var(--border)"></div>
         <span style="font-size:11px;color:var(--muted);font-weight:700">O MAG-REGISTER NG EMAIL</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
@@ -457,7 +457,7 @@ footer{padding:24px 40px;border-top:1px solid var(--border);display:flex;justify
         <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_black" data-text="signin_with" data-shape="pill" data-logo_alignment="left" data-width="360"></div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="flex:1;height:1px;background:var(--border)"></div>
         <span style="font-size:11px;color:var(--muted);font-weight:700">O MAG-LOGIN NG EMAIL</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
@@ -513,10 +513,8 @@ footer{padding:24px 40px;border-top:1px solid var(--border);display:flex;justify
       <div class="gate-emoji">📬</div>
       <h2>I-CHECK ANG EMAIL MO!</h2>
       <p>Nagpadala kami ng verification link sa <strong id="verifyEmailDisplay" style="color:var(--yellow)">iyong email</strong>. I-click ang link para ma-activate ang account mo.</p>
-      <div style="background:#1A1A1A;border:1px solid rgba(255,27,141,0.25);border-radius:16px;padding:14px;margin:12px 0;text-align:center">
-        <div style="font-size:32px;margin-bottom:6px">✉️</div>
-        <p style="font-size:14px;color:#ccc;line-height:1.8">Tingnan ang iyong <strong style="color:var(--yellow)">inbox</strong> — at ang <strong style="color:var(--yellow)">spam/junk folder</strong> din baka napunta doon!</p>
-        <p style="font-size:12px;color:var(--muted);margin-top:8px">I-click ang <strong style="color:var(--pink)">"✅ I-VERIFY ANG EMAIL KO"</strong> button sa email.</p>
+      <div style="background:#1A1A1A;border:1px solid rgba(255,27,141,0.25);border-radius:12px;padding:10px 14px;margin:8px 0;text-align:center">
+        <p style="font-size:13px;color:#ccc;line-height:1.6">Tingnan ang <strong style="color:var(--yellow)">inbox</strong> at <strong style="color:var(--yellow)">spam folder</strong> — i-click ang <strong style="color:var(--pink)">"I-VERIFY"</strong> button.</p>
       </div>
       <button class="gate-register-btn" id="resendBtn" onclick="resendVerification()">🔁 I-RESEND ANG VERIFICATION EMAIL</button>
       <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Na-verify na? <a style="color:var(--yellow);cursor:pointer;font-weight:700" onclick="showGateTabs();switchGateTab('login')">Mag-login →</a></p>
