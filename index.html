@@ -1948,18 +1948,36 @@ async function handleSetNewPassword(){
       method:'POST', headers:{'Content-Type':'text/plain'},
       body: JSON.stringify({action:'resetPassword', email, token, password:p1})
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try{ data=JSON.parse(text); }
+    catch(e){
+      const match = text.match(/\{[\s\S]*\}/);
+      if(match){ try{ data=JSON.parse(match[0]); }catch(e2){ data={success:false}; } }
+      else{ data={success:false}; }
+    }
     if(data.success){
-      showToast('✅ Na-update na ang password mo! Mag-login na.');
-      // Clean URL
+      // Clear URL params
       window.history.replaceState({}, document.title, window.location.pathname);
-      setTimeout(()=>{ showLoginForm(); showGate(); switchGateTab('login'); }, 1500);
+      // Show big success message
+      document.getElementById('setNewPasswordPanel').innerHTML = `
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:48px;margin-bottom:12px">✅</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#FFD700;margin-bottom:8px">PASSWORD UPDATED!</div>
+          <p style="color:#ccc;font-size:14px;margin-bottom:24px">Na-save na ang iyong bagong password. Mag-login na gamit ang bagong password mo.</p>
+          <button onclick="showLoginForm();showGate();switchGateTab('login')" style="background:#FF1B8D;color:#fff;padding:14px 32px;border-radius:50px;font-weight:800;font-size:15px;border:none;cursor:pointer">
+            MAG-LOGIN NA →
+          </button>
+        </div>
+      `;
+      showToast('✅ Password updated! Mag-login na.');
     } else {
       showToast('❗ '+(data.message||'Error. Try ulit!'));
       btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
     }
   }catch(e){
-    showToast('⚠️ Error. Try ulit!');
+    console.error('Reset pw error:',e);
+    showToast('⚠️ Error: ' + (e.message||'Try ulit!'));
     btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
   }
 }
