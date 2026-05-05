@@ -1811,7 +1811,7 @@ async function handleRegister(){
       if(checkData.found && !checkData.verified){
         // Registered but not verified — resend verification
         btn.textContent='Nagpapadala ng verification...';
-        await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'sendVerification',name,email})});
+        fetch(APPS_SCRIPT_URL+'?action=resendVerifyGet&email='+encodeURIComponent(email)+'&name='+encodeURIComponent(name)).catch(()=>{});
         userData={name,email,niche,plan:'free',ideasToday:0,ideasLimit:1,lastDay:new Date().toDateString(),verified:false,regDate:new Date().toISOString()};
         localStorage.setItem('pnv_user',JSON.stringify(userData));
         showVerifyPanel(email);
@@ -1834,7 +1834,7 @@ async function handleRegister(){
       }
 
       btn.textContent='Nagpapadala ng verification...';
-      await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'sendVerification',name,email})});
+      await fetch(APPS_SCRIPT_URL+'?action=resendVerifyGet&email='+encodeURIComponent(email)+'&name='+encodeURIComponent(name));
       showVerifyPanel(email);
       showToast('📧 Check ang email mo para sa verification link!');
     }catch(e){
@@ -1986,21 +1986,17 @@ async function handleForgotPassword(){
   const safeMsg = '📧 Kung naka-register ang email na yan, padadalahan ka namin ng reset link. I-check ang inbox at spam folder.';
 
   try{
-    const res  = await fetch(APPS_SCRIPT_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({action:'sendResetLink', email})
-    });
-    const data = await res.json();
-    // Always show safe message regardless of success/failure
-    showToast(safeMsg);
-    btn.textContent='✅ SENT! I-check ang inbox at spam.';
-    setTimeout(()=>{ btn.disabled=false; btn.textContent='📧 MAGPADALA NG RESET LINK →'; }, 30000);
+    // Use GET to avoid 302 redirect issue
+    const res = await fetch(APPS_SCRIPT_URL + '?action=sendResetGet&email=' + encodeURIComponent(email));
+    const text = await res.text();
+    console.log('Reset response:', text.substring(0,200));
   }catch(e){
-    // Still show safe message on error - never reveal if email exists
-    showToast(safeMsg);
-    btn.textContent='✅ SENT! I-check ang inbox at spam.';
-    setTimeout(()=>{ btn.disabled=false; btn.textContent='📧 MAGPADALA NG RESET LINK →'; }, 30000);
+    console.error('Reset error:', e);
   }
+  // Always show safe message
+  showToast(safeMsg);
+  btn.textContent='✅ SENT! I-check ang inbox at spam.';
+  setTimeout(()=>{ btn.disabled=false; btn.textContent='📧 MAGPADALA NG RESET LINK →'; }, 30000);
 }
 
 async function handleSetNewPassword(){
@@ -2049,11 +2045,9 @@ async function resendVerification(){
   btn.disabled=true; btn.textContent='Nagpapadala...';
   if(APPS_SCRIPT_URL){
     try{
-      await fetch(APPS_SCRIPT_URL,{
-        method:'POST', mode:'no-cors',
-        headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'sendVerification',name:userData.name,email:userData.email})
-      });
+      const url = APPS_SCRIPT_URL + '?action=resendVerifyGet&email=' + encodeURIComponent(userData.email) + '&name=' + encodeURIComponent(userData.name||'');
+      await fetch(url);
+      console.log('Resend verification sent');
     }catch(e){ console.log('Resend error:',e); }
   }
   showToast('📧 Napadala na ulit! Tingnan ang inbox at spam folder mo.');
