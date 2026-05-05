@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PNV Admin — Registered Users</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --black: #0a0a0a;
+  --pink: #FF1B8D;
+  --gold: #FFD700;
+  --card: #111;
+  --border: #222;
+  --text: #f0f0f0;
+  --muted: #666;
+}
+body { background:var(--black); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
+
+/* LOCK SCREEN */
+.lock {
+  position:fixed; inset:0; background:var(--black);
+  display:flex; align-items:center; justify-content:center;
+  z-index:100; flex-direction:column; gap:16px;
+}
+.lock-box {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:16px; padding:40px 36px; width:340px; text-align:center;
+}
+.lock-logo { font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--gold); letter-spacing:3px; margin-bottom:4px; }
+.lock-logo span { color:var(--pink); }
+.lock-sub { font-size:11px; color:var(--muted); letter-spacing:2px; margin-bottom:28px; }
+.lock-label { font-size:10px; color:var(--pink); font-weight:700; letter-spacing:2px; text-align:left; margin-bottom:8px; }
+.lock-input {
+  width:100%; background:#0a0a0a; border:1.5px solid var(--border);
+  border-radius:8px; padding:13px 16px; color:var(--text);
+  font-family:'DM Sans',sans-serif; font-size:14px; outline:none; margin-bottom:16px;
+  transition:border-color 0.2s;
+}
+.lock-input:focus { border-color:var(--pink); }
+.lock-btn {
+  width:100%; background:var(--pink); border:none; border-radius:8px;
+  padding:14px; color:#fff; font-family:'Bebas Neue',sans-serif;
+  font-size:20px; letter-spacing:2px; cursor:pointer; transition:background 0.2s;
+}
+.lock-btn:hover { background:#d4155a; }
+.lock-err { font-size:12px; color:#ff6b9d; margin-top:8px; display:none; }
+
+/* MAIN */
+.main { display:none; padding:28px; max-width:1100px; margin:0 auto; }
+
+.top-bar {
+  display:flex; align-items:center; gap:16px; margin-bottom:28px;
+  padding-bottom:20px; border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.logo { font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--gold); letter-spacing:2px; }
+.logo span { color:var(--pink); }
+.badge {
+  background:rgba(255,27,141,0.12); border:1px solid rgba(255,27,141,0.25);
+  color:var(--pink); font-size:10px; font-weight:700; letter-spacing:2px;
+  padding:4px 12px; border-radius:20px; text-transform:uppercase;
+}
+.top-bar-right { margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+.search-input {
+  background:var(--card); border:1.5px solid var(--border); border-radius:8px;
+  padding:10px 16px; color:var(--text); font-family:'DM Sans',sans-serif;
+  font-size:13px; outline:none; width:220px; transition:border-color 0.2s;
+}
+.search-input:focus { border-color:var(--pink); }
+
+.btn {
+  background:var(--pink); border:none; border-radius:8px; padding:10px 20px;
+  color:#fff; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1.5px;
+  cursor:pointer; transition:background 0.2s; white-space:nowrap;
+}
+.btn:hover { background:#d4155a; }
+.btn-outline {
+  background:transparent; border:1.5px solid var(--border); border-radius:8px;
+  padding:10px 20px; color:var(--muted); font-family:'Bebas Neue',sans-serif;
+  font-size:15px; letter-spacing:1.5px; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+}
+.btn-outline:hover { border-color:var(--gold); color:var(--gold); }
+
+/* STATS ROW */
+.stats { display:flex; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+.stat {
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:16px 22px; flex:1; min-width:120px;
+}
+.stat-num { font-family:'Bebas Neue',sans-serif; font-size:34px; color:var(--gold); }
+.stat-label { font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+
+/* TABLE */
+.table-wrap {
+  background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+}
+.table-header {
+  background:rgba(255,27,141,0.08); border-bottom:1px solid var(--border);
+  padding:12px 20px; display:flex; align-items:center; justify-content:space-between;
+}
+.table-header-label { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:var(--pink); }
+.table-count { font-size:12px; color:var(--muted); }
+
+table { width:100%; border-collapse:collapse; }
+th {
+  text-align:left; padding:12px 16px; font-size:10px; font-weight:700;
+  letter-spacing:1.5px; text-transform:uppercase; color:var(--muted);
+  border-bottom:1px solid var(--border); background:#0d0d0d; cursor:pointer;
+  user-select:none;
+}
+th:hover { color:var(--pink); }
+td { padding:13px 16px; font-size:13px; border-bottom:1px solid #1a1a1a; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+
+.plan-badge {
+  font-size:10px; font-weight:700; letter-spacing:1px; padding:3px 10px;
+  border-radius:20px; text-transform:uppercase;
+}
+.plan-free { background:rgba(255,255,255,0.06); color:var(--muted); border:1px solid var(--border); }
+.plan-pro  { background:rgba(255,27,141,0.12); color:var(--pink); border:1px solid rgba(255,27,141,0.25); }
+.plan-vip  { background:rgba(255,215,0,0.1); color:var(--gold); border:1px solid rgba(255,215,0,0.25); }
+
+.verified-dot {
+  width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px;
+}
+.v-yes { background:#4caf50; }
+.v-no  { background:#555; }
+
+.email-cell { font-size:12px; color:#aaa; }
+.name-cell { font-weight:600; }
+.date-cell { font-size:11px; color:var(--muted); }
+.niche-cell { font-size:11px; color:#888; }
+
+/* LOADING */
+.loading-state { text-align:center; padding:60px 20px; }
+.spin {
+  width:40px; height:40px; border:2px solid var(--border);
+  border-top-color:var(--pink); border-radius:50%;
+  animation:spin 0.8s linear infinite; margin:0 auto 16px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-label { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--muted); letter-spacing:3px; }
+
+.empty-state { text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
+
+/* TOAST */
+.toast {
+  position:fixed; bottom:24px; right:24px;
+  background:var(--gold); color:#000; font-family:'Bebas Neue',sans-serif;
+  font-size:14px; letter-spacing:2px; padding:10px 20px; border-radius:6px;
+  opacity:0; transform:translateY(8px); transition:all 0.2s; pointer-events:none; z-index:999;
+}
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* RESPONSIVE */
+@media(max-width:600px) {
+  .main { padding:16px; }
+  .search-input { width:100%; }
+  td, th { padding:10px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div class="lock" id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-logo">Post Na <span>Viral</span></div>
+    <div class="lock-sub">ADMIN PANEL</div>
+    <div class="lock-label">ADMIN PASSWORD</div>
+    <input class="lock-input" type="password" id="adminPass" placeholder="Enter admin password"
+      onkeydown="if(event.key==='Enter') checkPassword()"/>
+    <button class="lock-btn" onclick="checkPassword()">ENTER</button>
+    <div class="lock-err" id="lockErr">Wrong password. Try again.</div>
+  </div>
+</div>
+
+<!-- MAIN PANEL -->
+<div class="main" id="mainPanel">
+
+  <div class="top-bar">
+    <div>
+      <div class="logo">Post Na <span>Viral</span></div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:2px;">REGISTERED USERS</div>
+    </div>
+    <div class="badge">ADMIN</div>
+    <div class="top-bar-right">
+      <input class="search-input" type="text" id="searchInput" placeholder="Search name or email..." oninput="filterTable()"/>
+      <button class="btn-outline" onclick="exportCSV()">EXPORT CSV</button>
+      <button class="btn" onclick="loadUsers()">REFRESH</button>
+    </div>
+  </div>
+
+  <div class="stats" id="statsRow">
+    <div class="stat"><div class="stat-num" id="statTotal">-</div><div class="stat-label">Total Users</div></div>
+    <div class="stat"><div class="stat-num" id="statVerified">-</div><div class="stat-label">Verified</div></div>
+    <div class="stat"><div class="stat-num" id="statPro">-</div><div class="stat-label">Pro Users</div></div>
+    <div class="stat"><div class="stat-num" id="statToday">-</div><div class="stat-label">Joined Today</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <div class="table-header-label">USER LIST</div>
+      <div class="table-count" id="tableCount"></div>
+    </div>
+    <div id="tableBody">
+      <div class="loading-state">
+        <div class="spin"></div>
+        <div class="loading-label">Loading users...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── ADMIN PASSWORD (change this to something secret) ──
+  const ADMIN_PASSWORD = 'postnaviral2025';
+
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHS8DVmH5XNqzZ2cRUNZVdcfcNha7OqRWZ28kswKizfaot9oOXcKn1eZjXOUL8TN5SrA/exec';
+
+  let allUsers = [];
+
+  function checkPassword() {
+    const val = document.getElementById('adminPass').value;
+    if (val === ADMIN_PASSWORD) {
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('mainPanel').style.display = 'block';
+      loadUsers();
+    } else {
+      document.getElementById('lockErr').style.display = 'block';
+      document.getElementById('adminPass').value = '';
+      document.getElementById('adminPass').focus();
+    }
+  }
+
+  async function loadUsers() {
+    document.getElementById('tableBody').innerHTML = '<div class="loading-state"><div class="spin"></div><div class="loading-label">Loading users...</div></div>';
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + '?action=listUsers&adminKey=' + encodeURIComponent(ADMIN_PASSWORD));
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch(e) { throw new Error('Bad response: ' + text.substring(0, 100)); }
+
+      if (data.error) throw new Error(data.error);
+
+      allUsers = data.users || [];
+      renderTable(allUsers);
+      updateStats(allUsers);
+    } catch(e) {
+      console.error('Load error:', e);
+      document.getElementById('tableBody').innerHTML =
+        '<div class="empty-state">Could not load users.<br><small style="color:#444">' + e.message + '</small><br><br><button class="btn" onclick="loadUsers()" style="margin-top:8px">Try Again</button></div>';
+    }
+  }
+
+  function updateStats(users) {
+    const today = new Date().toDateString();
+    document.getElementById('statTotal').textContent = users.length;
+    document.getElementById('statVerified').textContent = users.filter(u => u.verified).length;
+    document.getElementById('statPro').textContent = users.filter(u => u.plan && u.plan !== 'free').length;
+    document.getElementById('statToday').textContent = users.filter(u => {
+      if (!u.regDate) return false;
+      return new Date(u.regDate).toDateString() === today;
+    }).length;
+  }
+
+  function renderTable(users) {
+    document.getElementById('tableCount').textContent = users.length + ' users';
+
+    if (!users.length) {
+      document.getElementById('tableBody').innerHTML = '<div class="empty-state">No users found.</div>';
+      return;
+    }
+
+    let rows = users.map(function(u, i) {
+      const planClass = u.plan === 'pro' ? 'plan-pro' : u.plan === 'vip' ? 'plan-vip' : 'plan-free';
+      const verifiedHtml = u.verified
+        ? '<span class="verified-dot v-yes"></span>Verified'
+        : '<span class="verified-dot v-no"></span>Pending';
+      const regDate = u.regDate ? new Date(u.regDate).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : '-';
+      const name = u.name || '-';
+      const email = u.email || '-';
+      const niche = u.niche || '-';
+      const plan = u.plan || 'free';
+
+      return '<tr>' +
+        '<td style="color:var(--muted);font-size:11px">' + (i + 1) + '</td>' +
+        '<td class="name-cell">' + escHtml(name) + '</td>' +
+        '<td class="email-cell"><a href="mailto:' + escHtml(email) + '" style="color:#aaa;text-decoration:none">' + escHtml(email) + '</a></td>' +
+        '<td><span class="plan-badge ' + planClass + '">' + plan.toUpperCase() + '</span></td>' +
+        '<td style="font-size:12px">' + verifiedHtml + '</td>' +
+        '<td class="niche-cell">' + escHtml(niche) + '</td>' +
+        '<td class="date-cell">' + regDate + '</td>' +
+        '</tr>';
+    }).join('');
+
+    document.getElementById('tableBody').innerHTML =
+      '<table>' +
+        '<thead><tr>' +
+          '<th>#</th>' +
+          '<th onclick="sortBy(\'name\')">FULL NAME</th>' +
+          '<th onclick="sortBy(\'email\')">EMAIL ADDRESS</th>' +
+          '<th onclick="sortBy(\'plan\')">PLAN</th>' +
+          '<th onclick="sortBy(\'verified\')">STATUS</th>' +
+          '<th>NICHE</th>' +
+          '<th onclick="sortBy(\'regDate\')">REGISTERED</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!q) { renderTable(allUsers); return; }
+    const filtered = allUsers.filter(function(u) {
+      return (u.name || '').toLowerCase().includes(q) ||
+             (u.email || '').toLowerCase().includes(q) ||
+             (u.niche || '').toLowerCase().includes(q);
+    });
+    renderTable(filtered);
+  }
+
+  let sortAsc = true;
+  function sortBy(field) {
+    sortAsc = !sortAsc;
+    allUsers.sort(function(a, b) {
+      const av = (a[field] || '').toString().toLowerCase();
+      const bv = (b[field] || '').toString().toLowerCase();
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    filterTable();
+  }
+
+  function exportCSV() {
+    if (!allUsers.length) { showToast('No users to export.'); return; }
+    const headers = ['#', 'Full Name', 'Email Address', 'Plan', 'Verified', 'Niche', 'Registered'];
+    const rows = allUsers.map(function(u, i) {
+      return [
+        i + 1,
+        '"' + (u.name || '').replace(/"/g, '""') + '"',
+        '"' + (u.email || '').replace(/"/g, '""') + '"',
+        u.plan || 'free',
+        u.verified ? 'Yes' : 'No',
+        '"' + (u.niche || '').replace(/"/g, '""') + '"',
+        u.regDate ? new Date(u.regDate).toLocaleDateString('en-PH') : '-'
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'postnaviral-users-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exported!');
+  }
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+  }
+
+  // Allow Enter key on password field
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.getElementById('lockScreen').style.display !== 'none') {
+      checkPassword();
+    }
+  });
+</script>
+</body>
+</html>
