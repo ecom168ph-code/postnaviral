@@ -847,6 +847,29 @@ const _origHideGate = typeof hideGate === 'function' ? hideGate : null;
 const YT_API_KEYS  = ['innertube']; // Placeholder — not used
 let ytApiKeyIndex  = 0;
 let YT_API_KEY     = 'innertube'; // Placeholder — not used
+const CORS_PROXY = 'https://corsproxy.io/?';
+
+// Helper function for Innertube requests with CORS
+async function fetchInnertubeWithCORS(url, body) {
+  try {
+    // Try direct first
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return response;
+  } catch (error) {
+    console.log('Direct Innertube failed, trying CORS proxy...');
+    // Fallback to CORS proxy
+    const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+    return fetch(proxiedUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  }
+}
 
 function switchYtApiKey(){
   ytApiKeyIndex = (ytApiKeyIndex + 1) % YT_API_KEYS.length;
@@ -945,11 +968,7 @@ async function searchYouTube(pageToken=''){
       ?`https://www.youtube.com/youtubei/v1/search?key=AIzaSyAO90d0o_cimZMillMJWQvyT-vbsGrNRXU&continuation=${pageToken}`
       :`https://www.youtube.com/youtubei/v1/search?key=AIzaSyAO90d0o_cimZMillMJWQvyT-vbsGrNRXU`;
     
-    const res=await fetch(innertubeUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(innertubBody)
-    });
+    const res=await fetchInnertubeWithCORS(innertubeUrl, innertubBody);
     
     const data=await res.json();
     
