@@ -849,7 +849,18 @@ const YT_API_KEYS  = [
 ];
 let ytApiKeyIndex  = 0;
 let YT_API_KEY     = YT_API_KEYS[0];
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+const CORS_PROXY = 'https://corsproxy.io/?';
+
+// Function to fetch via CORS proxy with proper headers
+async function fetchViaCORS(url) {
+  try {
+    const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+    return response;
+  } catch (error) {
+    console.error('CORS proxy error:', error);
+    throw error;
+  }
+}
 
 function switchYtApiKey(){
   ytApiKeyIndex = (ytApiKeyIndex + 1) % YT_API_KEYS.length;
@@ -931,10 +942,7 @@ async function searchYouTube(pageToken=''){
       ...(ytCurrentTab==='ph'&&{regionCode:'PH',relevanceLanguage:'tl'}),
       key:YT_API_KEY,...(pageToken&&{pageToken})});
     const apiUrl = `https://www.googleapis.com/youtube/v3/search?${params}`;
-    const res=await fetch(CORS_PROXY + encodeURIComponent(apiUrl), {
-      method: 'GET',
-      headers: {'Accept': 'application/json'}
-    });
+    const res=await fetchViaCORS(apiUrl);
     const data=await res.json();
     if(data.error){
       // Auto-switch to next API key if quota exceeded
@@ -955,10 +963,7 @@ async function searchYouTube(pageToken=''){
     const ids=(data.items||[]).map(i=>i.id.videoId).filter(Boolean).join(',');
     if(ids){
       const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_API_KEY}`;
-      const sr=await fetch(CORS_PROXY + encodeURIComponent(statsUrl), {
-        method: 'GET',
-        headers: {'Accept': 'application/json'}
-      });
+      const sr=await fetchViaCORS(statsUrl);
       const sd=await sr.json();
       (sd.items||[]).forEach(v=>ytStatsMap[v.id]=v.statistics);
     }
