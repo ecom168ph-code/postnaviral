@@ -963,29 +963,8 @@ function showCacheBadge(source, cachedAt) {
   if (meta) meta.appendChild(badge);
 }
 
-// ── LEGACY — not needed anymore but kept for compat ──
-const YT_API_KEYS = [];
-let ytApiKeyIndex = 0;
-let YT_API_KEY    = '';
-function switchYtApiKey() {}
-
-// CORS Proxy list — ordered by reliability
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://api.codetabs.com/v1/proxy?quest=',
-  'https://api.allorigins.win/raw?url=',
-  'https://thingproxy.freeboard.io/fetch/',
-];
-let corsProxyIndex = 0;
-function getCorsProxy() { return CORS_PROXIES[corsProxyIndex % CORS_PROXIES.length]; }
-function nextCorsProxy() { corsProxyIndex = (corsProxyIndex + 1) % CORS_PROXIES.length; }
-
-function getYtSearchUrls(q) {
-  return [
-    'https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&hl=en',
-    'https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&gl=PH',
-  ];
-}
+// ── YOUTUBE DATA API v3 KEY ──
+const YT_API_KEY = 'AIzaSyB4nIliTPi769ZySS38aZS-WKKLaeolTuo';
 const YT_MIN_VIEWS = 1000000;
 let ytVideoType    = 'video';
 let ytCurrentTab   = 'ph';
@@ -1166,157 +1145,92 @@ async function searchYouTube(pageToken='') {
   }
 
   // ════════════════════════════════════════════
-  // STEP 3: NO CACHE — DO REAL SCRAPE
+  // STEP 3: NO CACHE — CALL REAL YOUTUBE DATA API v3
+  // search.list = 100 units, videos.list = 1 unit
   // ════════════════════════════════════════════
   document.getElementById('ytLoadingText').textContent =
-    YT_TAB_CONFIG[ytCurrentTab].label + ' — Nagha-hanap ng 1M+ views...';
+    'Nagha-hanap ng viral videos...';
 
   try {
     const q = ytVideoType === 'short' ? query + ' #shorts' : query;
-    const searchUrls = getYtSearchUrls(q);
 
-    // Try every proxy × every search URL until one works
-    let html = null;
-    let lastError = '';
-    outer: for (let p = 0; p < CORS_PROXIES.length; p++) {
-      for (let u = 0; u < searchUrls.length; u++) {
-        try {
-          document.getElementById('ytLoadingText').textContent =
-            'Trying source ' + (p + 1) + '/' + CORS_PROXIES.length + '...';
-          const res = await fetch(CORS_PROXIES[p] + encodeURIComponent(searchUrls[u]), {
-            signal: AbortSignal.timeout(12000)
-          });
-          if (!res.ok) { lastError = 'HTTP ' + res.status; continue; }
-          const text = await res.text();
-          if (text.length < 5000) { lastError = 'Response too short'; continue; }
-          html = text;
-          break outer;
-        } catch(e) { lastError = e.message; }
-      }
+    // ── STEP 3A: search.list — get video IDs only (100 units) ──
+    const searchParams = new URLSearchParams({
+      part:        'id',
+      q:           q,
+      type:        'video',
+      order:       ytSortOrder === 'date' ? 'date' : 'viewCount',
+      maxResults:  '20',
+      regionCode:  'PH',
+      relevanceLanguage: 'tl',
+      key:         YT_API_KEY
+    });
+    if (ytVideoType === 'short') searchParams.set('videoDuration', 'short');
+
+    document.getElementById('ytLoadingText').textContent = 'Searching viral videos...';
+    const searchRes = await fetch(
+      'https://www.googleapis.com/youtube/v3/search?' + searchParams.toString()
+    );
+    if (!searchRes.ok) {
+      const err = await searchRes.json();
+      throw new Error(err?.error?.message || 'YouTube API error: ' + searchRes.status);
+    }
+    const searchData = await searchRes.json();
+    const rawIds = (searchData.items || []).map(i => i.id.videoId).filter(Boolean);
+
+    if (rawIds.length === 0) {
+      showToast('⚠️ Walang videos found. Try ng ibang keyword!');
+      document.getElementById('ytLoading').style.display = 'none';
+      if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
+      return;
     }
 
-    if (!html) throw new Error('All proxies failed: ' + lastError);
+    // ── STEP 3B: videos.list — get full details in one batch (1 unit) ──
+    document.getElementById('ytLoadingText').textContent = 'Loading video details...';
+    const videoParams = new URLSearchParams({
+      part:  'snippet,statistics,contentDetails',
+      id:    rawIds.join(','),
+      key:   YT_API_KEY
+    });
+    const videoRes = await fetch(
+      'https://www.googleapis.com/youtube/v3/videos?' + videoParams.toString()
+    );
+    if (!videoRes.ok) throw new Error('videos.list failed: ' + videoRes.status);
+    const videoData = await videoRes.json();
 
-    // ── MULTI-STRATEGY ytInitialData EXTRACTOR ──
-    // YouTube frequently changes how they embed this JSON.
-    // We try 4 patterns in order of reliability.
-    let initialData = null;
-
-    const patterns = [
-      /var ytInitialData\s*=\s*(\{[\s\S]*?\});\s*<\/script>/,
-      /window\["ytInitialData"\]\s*=\s*(\{[\s\S]*?\});\s*<\/script>/,
-      /ytInitialData\s*=\s*(\{[\s\S]*?\});\s*(?:\/\/|<\/script>)/,
-      /"ytInitialData"\s*,\s*(\{[\s\S]*?\})\s*\)/,
-    ];
-
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (match) {
-        try {
-          initialData = JSON.parse(match[1]);
-          if (initialData?.contents) break; // valid — stop trying
-        } catch(e) {
-          initialData = null; // try next pattern
-        }
-      }
-    }
-
-    // ── FALLBACK: regex-extract all videoId occurrences from raw HTML ──
-    // Works even when JSON parsing fails completely.
+    // ── STEP 3C: build video objects, filter 1M+ views ──
     const videos = [];
+    for (const item of (videoData.items || [])) {
+      const videoId   = item.id;
+      const snippet   = item.snippet || {};
+      const stats     = item.statistics || {};
+      const viewCount = parseInt(stats.viewCount || '0');
 
-    if (initialData?.contents) {
-      // Standard path — parse from structured JSON
-      try {
-        // Try multiple JSON paths YouTube has used over time
-        const sectionPaths = [
-          initialData?.contents?.twoColumnSearchResultsRenderer
-            ?.primaryContents?.sectionListRenderer?.contents,
-          initialData?.contents?.twoColumnSearchResultsRenderer
-            ?.primaryContents?.richGridRenderer?.contents,
-        ].filter(Boolean);
+      if (viewCount < YT_MIN_VIEWS) continue;
 
-        for (const sections of sectionPaths) {
-          for (const section of sections) {
-            const items =
-              section?.itemSectionRenderer?.contents ||
-              section?.richItemRenderer ? [section] : [];
+      const thumbs    = snippet.thumbnails || {};
+      const thumbnail = (thumbs.maxres || thumbs.high || thumbs.medium || thumbs.default || {}).url
+                     || 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg';
 
-            for (const item of items) {
-              const v = item?.videoRenderer
-                || item?.richItemRenderer?.content?.videoRenderer;
-              if (!v?.videoId) continue;
-
-              const videoId   = v.videoId;
-              const title     = v.title?.runs?.[0]?.text
-                             || v.title?.simpleText || 'Video';
-              const channel   = v.longBylineText?.runs?.[0]?.text
-                             || v.ownerText?.runs?.[0]?.text || 'Unknown';
-              const thumbs    = v.thumbnail?.thumbnails || [];
-              const thumbnail = (thumbs[thumbs.length - 1] || thumbs[0] || {}).url
-                             || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-              const viewText  = v.viewCountText?.simpleText
-                             || v.shortViewCountText?.simpleText || '0';
-              const viewCount = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
-              const pubText   = v.publishedTimeText?.simpleText || '';
-
-              if (viewCount >= YT_MIN_VIEWS) {
-                videos.push({
-                  id: { videoId },
-                  snippet: {
-                    title, channelTitle: channel,
-                    thumbnails: {
-                      default: { url: thumbnail },
-                      medium:  { url: thumbnail }
-                    },
-                    publishedAt: new Date().toISOString(),
-                    publishedTimeText: pubText
-                  },
-                  _stats: { viewCount }
-                });
-                ytStatsMap[videoId] = { viewCount };
-              }
-            }
-          }
+      const entry = {
+        id: { videoId },
+        snippet: {
+          title:        snippet.title        || 'Video',
+          channelTitle: snippet.channelTitle || 'YouTube',
+          thumbnails: { default: { url: thumbnail }, medium: { url: thumbnail } },
+          publishedAt:  snippet.publishedAt  || new Date().toISOString(),
+        },
+        _stats: {
+          viewCount,
+          likeCount:    parseInt(stats.likeCount    || '0'),
+          commentCount: parseInt(stats.commentCount || '0'),
+          duration:     item.contentDetails?.duration || ''
         }
-      } catch(parseErr) { console.error('JSON path parse error:', parseErr); }
+      };
+      videos.push(entry);
+      ytStatsMap[videoId] = entry._stats;
     }
 
-    // ── LAST RESORT: extract videoIds directly from HTML with regex ──
-    // Catches videos even when JSON structure is unrecognised.
-    if (videos.length === 0) {
-      console.log('Falling back to regex video extraction...');
-      const idMatches = [...html.matchAll(/"videoId"\s*:\s*"([a-zA-Z0-9_-]{11})"/g)];
-      const titleMatches = [...html.matchAll(/"title"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/g)];
-      const channelMatches = [...html.matchAll(/"longBylineText"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/g)];
-      const viewMatches = [...html.matchAll(/"viewCountText"\s*:\s*\{"simpleText"\s*:\s*"([^"]+)"/g)];
-
-      const seen = new Set();
-      idMatches.forEach((m, i) => {
-        const videoId = m[1];
-        if (seen.has(videoId)) return;
-        seen.add(videoId);
-
-        const viewText  = viewMatches[i]?.[1] || '0';
-        const viewCount = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
-        if (viewCount < YT_MIN_VIEWS) return;
-
-        const title   = titleMatches[i]?.[1]   || 'Viral Video';
-        const channel = channelMatches[i]?.[1] || 'YouTube';
-        const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-
-        videos.push({
-          id: { videoId },
-          snippet: {
-            title, channelTitle: channel,
-            thumbnails: { default: { url: thumbnail }, medium: { url: thumbnail } },
-            publishedAt: new Date().toISOString()
-          },
-          _stats: { viewCount }
-        });
-        ytStatsMap[videoId] = { viewCount };
-      });
-    }
 
     if (videos.length === 0) {
       // No 1M+ videos found — try showing any cached results for this query
@@ -1444,49 +1358,122 @@ function formatDate(d){
   return new Date(d).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'});
 }
 
+function parseDuration(iso){
+  if(!iso)return'';
+  const m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if(!m)return'';
+  const h=parseInt(m[1]||0),mn=parseInt(m[2]||0),s=parseInt(m[3]||0);
+  if(h>0) return h+':'+(mn<10?'0':'')+mn+':'+(s<10?'0':'')+s;
+  return mn+':'+(s<10?'0':'')+s;
+}
+
 function renderYtCards(items){
   const grid=document.getElementById('ytGrid');
   grid.innerHTML='';
   if(!items.length){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">Walang 1M+ views na video. Try ng ibang keyword o i-click ang Load More.</div>';
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">Walang 1M+ views na video. Try ng ibang keyword!</div>';
     return;
   }
+  const fallbackThumb = 'https://i.ytimg.com/vi/VIDEOID/hqdefault.jpg';
   items.forEach(item=>{
-    const vid=item.id.videoId,title=item.snippet.title,ch=item.snippet.channelTitle;
-    const thumb=item.snippet.thumbnails?.medium?.url||item.snippet.thumbnails?.default?.url;
-    const views=ytStatsMap[vid]?.viewCount||'0',pub=item.snippet.publishedAt;
-    const desc=(item.snippet.description||'').substring(0,200).replace(/'/g,'\\\'').replace(/\n/g,' ');
-    const tEsc=title.replace(/'/g,'\\\''),cEsc=ch.replace(/'/g,'\\\'');
-    const card=document.createElement('div');
-    card.className='yt-card';
-    card.innerHTML=`
-      <div class="yt-thumb-wrap" onclick="playYtVideo('${vid}','${tEsc}','${cEsc}','${views}','${pub}','${desc}')">
-        <img class="yt-thumb" src="${thumb}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180/111/444?text=Video'"/>
-        <div class="yt-play-overlay"><div class="yt-play-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div></div>
-      </div>
-      <div class="yt-card-body">
-        <div class="yt-card-title">${title}</div>
-        <div class="yt-channel">📺 ${ch}</div>
-        <div class="yt-card-stats">
-          <span class="yt-views-badge">👁 ${formatViews(views)} views</span>
-          <span class="yt-date-badge">📅 ${formatDate(pub)}</span>
-        </div>
-        <button class="yt-cta-btn" onclick="event.stopPropagation();quickInspire('${vid}','${tEsc}','${cEsc}','${views}','${pub}','${desc}')">
-          🎯 GAWING INSPIRATION PARA SA CONTENT KO →
-        </button>
-      </div>
-    `;
+    const vid   = item.id.videoId;
+    const title = item.snippet.title || 'Video';
+    const ch    = item.snippet.channelTitle || 'YouTube';
+    const thumb = item.snippet.thumbnails?.medium?.url
+               || item.snippet.thumbnails?.default?.url
+               || fallbackThumb.replace('VIDEOID', vid);
+    const stats = ytStatsMap[vid] || {};
+    const views = stats.viewCount || 0;
+    const likes = stats.likeCount || 0;
+    const pub   = item.snippet.publishedAt || '';
+    const dur   = parseDuration(stats.duration || '');
+    const desc  = (item.snippet.description || '').substring(0, 150);
+
+    // Build card using createElement — no quote escaping issues
+    const card = document.createElement('div');
+    card.className = 'yt-card';
+
+    // Thumb wrap
+    const thumbWrap = document.createElement('div');
+    thumbWrap.className = 'yt-thumb-wrap';
+    thumbWrap.dataset.vid   = vid;
+    thumbWrap.dataset.title = title;
+    thumbWrap.dataset.ch    = ch;
+    thumbWrap.dataset.views = views;
+    thumbWrap.dataset.pub   = pub;
+    thumbWrap.dataset.desc  = desc;
+    thumbWrap.onclick = function(){ playYtVideo(this); };
+
+    const img = document.createElement('img');
+    img.className = 'yt-thumb';
+    img.src = thumb;
+    img.loading = 'lazy';
+    img.onerror = function(){ this.src = fallbackThumb.replace('VIDEOID', vid); };
+    thumbWrap.appendChild(img);
+
+    if(dur){
+      const durBadge = document.createElement('div');
+      durBadge.style.cssText = 'position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px';
+      durBadge.textContent = dur;
+      thumbWrap.appendChild(durBadge);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'yt-play-overlay';
+    overlay.innerHTML = '<div class="yt-play-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg></div>';
+    thumbWrap.appendChild(overlay);
+    card.appendChild(thumbWrap);
+
+    // Card body
+    const body = document.createElement('div');
+    body.className = 'yt-card-body';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'yt-card-title';
+    titleEl.textContent = title;
+    body.appendChild(titleEl);
+
+    const chEl = document.createElement('div');
+    chEl.className = 'yt-channel';
+    chEl.textContent = '📺 ' + ch;
+    body.appendChild(chEl);
+
+    const statsEl = document.createElement('div');
+    statsEl.className = 'yt-card-stats';
+    statsEl.innerHTML = '<span class="yt-views-badge">👁 '+formatViews(views)+' views</span>'
+      + (likes>0 ? '<span class="yt-date-badge">👍 '+formatViews(likes)+'</span>' : '')
+      + '<span class="yt-date-badge">📅 '+formatDate(pub)+'</span>';
+    body.appendChild(statsEl);
+
+    const btn = document.createElement('button');
+    btn.className = 'yt-cta-btn';
+    btn.textContent = '🎯 GAWING INSPIRATION PARA SA CONTENT KO →';
+    btn.onclick = function(e){
+      e.stopPropagation();
+      quickInspireEl(card.querySelector('.yt-thumb-wrap'));
+    };
+    body.appendChild(btn);
+    card.appendChild(body);
     grid.appendChild(card);
   });
 }
 
-function playYtVideo(videoId,title,channel,views,pub,desc){
+
+function playYtVideo(el){
+  const d=el.dataset;
+  const videoId=d.vid,title=d.title,channel=d.ch,views=d.views,pub=d.pub,desc=d.desc;
   ytCurrentVideoData={videoId,title,channel,views,description:desc,publishedAt:pub};
   document.getElementById('ytPlayerTitle').textContent=title;
-  document.getElementById('ytIframe').src=`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-  document.getElementById('ytPlayerMeta').innerHTML=`<span style="color:var(--pink);font-weight:700">📺 ${channel}</span> &nbsp;·&nbsp; 👁 ${formatViews(views)} views &nbsp;·&nbsp; 📅 ${formatDate(pub)}`;
+  document.getElementById('ytIframe').src='https://www.youtube.com/embed/'+videoId+'?autoplay=1&rel=0';
+  document.getElementById('ytPlayerMeta').innerHTML='<span style="color:var(--pink);font-weight:700">📺 '+channel+'</span> &nbsp;&middot;&nbsp; 👁 '+formatViews(views)+' views &nbsp;&middot;&nbsp; 📅 '+formatDate(pub);
   document.getElementById('ytPlayerModal').style.display='flex';
   document.body.style.overflow='hidden';
+}
+
+function quickInspireEl(el){
+  const d=el.dataset;
+  ytCurrentVideoData={videoId:d.vid,title:d.title,channel:d.ch,views:d.views,description:d.desc,publishedAt:d.pub};
+  confirmYtInspiration();
 }
 
 function quickInspire(videoId,title,channel,views,pub,desc){
