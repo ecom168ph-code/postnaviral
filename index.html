@@ -969,14 +969,23 @@ let ytApiKeyIndex = 0;
 let YT_API_KEY    = '';
 function switchYtApiKey() {}
 
-// CORS Proxy (fallback if primary fails)
+// CORS Proxy list — ordered by reliability
 const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://api.allorigins.win/raw?url=',
+  'https://thingproxy.freeboard.io/fetch/',
 ];
 let corsProxyIndex = 0;
 function getCorsProxy() { return CORS_PROXIES[corsProxyIndex % CORS_PROXIES.length]; }
-function nextCorsProxy() { corsProxyIndex++; }
+function nextCorsProxy() { corsProxyIndex = (corsProxyIndex + 1) % CORS_PROXIES.length; }
+
+function getYtSearchUrls(q) {
+  return [
+    'https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&hl=en',
+    'https://www.youtube.com/results?search_query=' + encodeURIComponent(q) + '&gl=PH',
+  ];
+}
 const YT_MIN_VIEWS = 1000000;
 let ytVideoType    = 'video';
 let ytCurrentTab   = 'ph';
@@ -1164,25 +1173,29 @@ async function searchYouTube(pageToken='') {
 
   try {
     const q = ytVideoType === 'short' ? query + ' #shorts' : query;
-    const searchUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
-    const proxy = getCorsProxy();
+    const searchUrls = getYtSearchUrls(q);
 
-    let response;
-    try {
-      response = await fetch(proxy + encodeURIComponent(searchUrl));
-      if (!response.ok) throw new Error('proxy failed');
-    } catch(proxyErr) {
-      // Try next proxy
-      nextCorsProxy();
-      try {
-        response = await fetch(getCorsProxy() + encodeURIComponent(searchUrl));
-        if (!response.ok) throw new Error('all proxies failed');
-      } catch(e2) {
-        throw new Error('Could not reach YouTube. Check your connection.');
+    // Try every proxy × every search URL until one works
+    let html = null;
+    let lastError = '';
+    outer: for (let p = 0; p < CORS_PROXIES.length; p++) {
+      for (let u = 0; u < searchUrls.length; u++) {
+        try {
+          document.getElementById('ytLoadingText').textContent =
+            'Trying source ' + (p + 1) + '/' + CORS_PROXIES.length + '...';
+          const res = await fetch(CORS_PROXIES[p] + encodeURIComponent(searchUrls[u]), {
+            signal: AbortSignal.timeout(12000)
+          });
+          if (!res.ok) { lastError = 'HTTP ' + res.status; continue; }
+          const text = await res.text();
+          if (text.length < 5000) { lastError = 'Response too short'; continue; }
+          html = text;
+          break outer;
+        } catch(e) { lastError = e.message; }
       }
     }
 
-    const html = await response.text();
+    if (!html) throw new Error('All proxies failed: ' + lastError);
 
     // ── MULTI-STRATEGY ytInitialData EXTRACTOR ──
     // YouTube frequently changes how they embed this JSON.
