@@ -927,84 +927,99 @@ async function searchYouTube(pageToken=''){
   try{
     const q=ytVideoType==='short'?query+' #shorts':query;
     
-    // Use noembed.com to get video info without API
-    // This service provides video metadata without quota limits
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&sp=EgJAAQ%3D%3D`;
+    // Use RapidAPI YouTube Search - Free, CORS-enabled, no quota!
+    // Get free key at: https://rapidapi.com/ytSearchAPI/api/youtube-search6
+    const RAPIDAPI_KEY = 'demo'; // Will use free endpoint demo
     
-    // Fetch YouTube search page via CORS proxy
+    // Alternative: Use free YouTube search proxy API
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+    
+    // Use AllOrigins to fetch YouTube search
     const corsProxy = 'https://api.allorigins.win/raw?url=';
-    const response = await fetch(corsProxy + encodeURIComponent(searchUrl));
+    const response = await fetch(corsProxy + encodeURIComponent(searchUrl), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to fetch YouTube search');
     const html = await response.text();
     
-    // Parse video data from HTML
-    const videoRegex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
-    const titleRegex = /"title":{"simpleText":"([^"]+)"|"runs":\[\{"text":"([^"]+)"/g;
-    const viewsRegex = /"viewCountText":{"simpleText":"([^"]+)"/g;
+    // Parse initialData from YouTube HTML
+    const initialDataMatch = html.match(/var ytInitialData = ({.*?});/s);
+    if (!initialDataMatch) {
+      showToast('⚠️ Could not parse YouTube data. Try again!');
+      document.getElementById('ytLoading').style.display='none';
+      if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
+      return;
+    }
     
+    let initialData;
+    try {
+      initialData = JSON.parse(initialDataMatch[1]);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      showToast('⚠️ Error parsing data. Try again!');
+      document.getElementById('ytLoading').style.display='none';
+      if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
+      return;
+    }
+    
+    // Extract videos from initialData
     const videos = [];
-    let match;
-    const videoIds = new Set();
-    
-    // Extract video IDs
-    while ((match = videoRegex.exec(html)) !== null) {
-      const videoId = match[1];
-      if (videoId.length === 11 && !videoIds.has(videoId)) {
-        videoIds.add(videoId);
-        videos.push({ id: { videoId }, views: 0 });
-        if (videos.length >= 25) break;
-      }
-    }
-    
-    // Get detailed info for each video using noembed
-    const resultsWithViews = [];
-    for (const video of videos) {
-      try {
-        const infoUrl = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${video.id.videoId}`;
-        const infoRes = await fetch(corsProxy + encodeURIComponent(infoUrl));
-        const info = await infoRes.json();
-        
-        if (info && info.title) {
-          // Estimate views (noembed doesn't give exact views)
-          // For viral content, assume 1M+ if it's a real video
-          const estimatedViews = 1500000; // Conservative estimate for trending
-          
-          ytAllItems.push({
-            id: { videoId: video.id.videoId },
-            snippet: {
-              title: info.title || 'Video',
-              channelTitle: info.author_name || 'Unknown',
-              thumbnailUrl: info.thumbnail_url || '',
-              publishedAt: new Date().toISOString()
-            }
-          });
-          
-          ytStatsMap[video.id.videoId] = { viewCount: estimatedViews };
-          resultsWithViews.push(video.id.videoId);
-        }
-      } catch (e) {
-        console.log('Error fetching video info:', e);
-      }
+    try {
+      const contents = initialData?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
       
-      // Rate limit requests
-      await new Promise(r => setTimeout(r, 100));
+      for (const item of contents) {
+        if (item.videoRenderer) {
+          const video = item.videoRenderer;
+          const videoId = video.videoId;
+          const title = video.title?.runs?.[0]?.text || 'Video';
+          const channel = video.longBylineText?.runs?.[0]?.text || 'Unknown';
+          const thumbnail = video.thumbnail?.thumbnails?.[video.thumbnail.thumbnails.length - 1]?.url || '';
+          const viewText = video.viewCountText?.simpleText || '0 views';
+          const viewCount = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
+          
+          if (videoId && viewCount >= YT_MIN_VIEWS) {
+            videos.push({
+              id: { videoId },
+              snippet: {
+                title,
+                channelTitle: channel,
+                thumbnails: { default: { url: thumbnail } },
+                publishedAt: new Date().toISOString()
+              }
+            });
+            
+            ytStatsMap[videoId] = { viewCount };
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Parse error:', e);
     }
     
-    if (ytAllItems.length === 0) {
+    if (videos.length === 0) {
       showToast('⚠️ Walang videos found. Try another search!');
       document.getElementById('ytLoading').style.display='none';
       if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
       return;
     }
     
-    // Filter and sort
+    ytAllItems = [...ytAllItems, ...videos];
     const filtered = ytAllItems.filter(i => 
       parseInt(ytStatsMap[i.id.videoId]?.viewCount || 0) >= YT_MIN_VIEWS
     );
     
-    document.getElementById('ytGrid').innerHTML='';
-    renderYtCards(filtered);
+    const sorted = [...filtered].sort((a, b) => 
+      parseInt(ytStatsMap[b.id.videoId]?.viewCount || 0) - 
+      parseInt(ytStatsMap[a.id.videoId]?.viewCount || 0)
+    );
     
-    document.getElementById('ytLoadMore').style.display='none'; // No pagination available
+    document.getElementById('ytGrid').innerHTML='';
+    renderYtCards(sorted);
+    
+    document.getElementById('ytLoadMore').style.display='none';
     document.getElementById('ytResultMeta').textContent=`${filtered.length} viral videos (1M+ views) · ${YT_TAB_CONFIG[ytCurrentTab].label}`;
     document.getElementById('ytLoading').style.display='none';
     document.getElementById('ytResults').style.display='block';
