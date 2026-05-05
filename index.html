@@ -1780,7 +1780,7 @@ async function handleRegister(){
 }
 
 async function handleLogin(){
-  const email    = document.getElementById('loginEmail').value.trim();
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const password = document.getElementById('loginPassword').value.trim();
   if(!email){ showToast('❗ Ilagay ang iyong email!'); return; }
 
@@ -1789,46 +1789,49 @@ async function handleLogin(){
 
   if(APPS_SCRIPT_URL){
     try{
-      const res  = await fetch(APPS_SCRIPT_URL,{
+      const res = await fetch(APPS_SCRIPT_URL,{
         method:'POST', headers:{'Content-Type':'text/plain'},
         body:JSON.stringify({action:'login',email,password})
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try{ data=JSON.parse(text); }
+      catch(e){ throw new Error('Server error: '+text.substring(0,100)); }
 
       if(data.success){
-        userData={
-          name:data.name, email, plan:data.plan||'free',
-          ideasToday:data.ideasToday||0, ideasLimit:data.ideasLimit||1,
-          lastDay:new Date().toDateString(), verified:true
-        };
+        userData={name:data.name||email.split('@')[0],email,plan:data.plan||'free',
+          ideasToday:data.ideasToday||0,ideasLimit:data.ideasLimit||1,
+          lastDay:new Date().toDateString(),verified:true};
         localStorage.setItem('pnv_user',JSON.stringify(userData));
-        updateNavAuth();
-        hideGate();
-        showToast('👋 Welcome back, '+data.name+'!');
+        updateNavAuth(); hideGate();
+        showToast('👋 Welcome back, '+userData.name+'!');
         document.getElementById('ideaCounter').style.display='block';
-        document.getElementById('ideaCounter').textContent='Welcome back, '+data.name+'!';
+        document.getElementById('ideaCounter').textContent='Welcome back, '+userData.name+'!';
+      } else if(data.notVerified){
+        showVerifyPanel(email);
+        showToast('📧 I-verify muna ang email mo bago mag-login!');
       } else {
         showToast('❗ '+(data.message||'Mali ang email o password. Try ulit!'));
       }
     }catch(e){
-      // Fallback to localStorage
+      console.error('Login error:',e);
       const saved=localStorage.getItem('pnv_user');
       if(saved){
         const u=JSON.parse(saved);
-        if(u.email===email){
+        if(u.email===email||u.email===email.toLowerCase()){
           userData=u;
-          if(!userData.verified){ showVerifyPanel(email); showToast('📧 I-verify muna ang email mo!'); }
-          else { hideGate(); showToast('👋 Welcome back, '+userData.name+'!'); }
-        } else { showToast('❗ Hindi match ang email. Try ulit.'); }
-      } else { showToast('❗ Wala pang account? Mag-register muna!'); }
+          if(userData.verified===false){ showVerifyPanel(email); showToast('📧 I-verify muna ang email mo!'); }
+          else{ hideGate(); showToast('👋 Welcome back (offline), '+userData.name+'!'); }
+        } else { showToast('❗ Connection error. Try ulit.'); }
+      } else { showToast('❗ Hindi makonekta. Try ulit mamaya.'); }
     }
   } else {
     const saved=localStorage.getItem('pnv_user');
     if(saved){
       const u=JSON.parse(saved);
-      if(!email||u.email===email){ userData=u; hideGate(); showToast('👋 Welcome back, '+userData.name+'!'); }
-      else { showToast('❗ Hindi match ang email. Try ulit.'); }
-    } else { showToast('❗ Wala pang account? Mag-register muna!'); }
+      if(u.email===email){ userData=u; hideGate(); showToast('👋 Welcome back, '+userData.name+'!'); }
+      else{ showToast('❗ Hindi match ang email.'); }
+    } else { showToast('❗ Mag-register muna!'); }
   }
   btn.disabled=false; btn.textContent='MAG-LOGIN →';
 }
