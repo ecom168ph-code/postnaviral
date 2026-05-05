@@ -3883,27 +3883,36 @@ window.addEventListener('load',async ()=>{
 </div>
 
 <script>
+// Steal Formula state vars — declared first to avoid temporal dead zone
+  var sf_formulaData = null;
+  var sf_videoTitle  = '';
+  var sf_templateRaw = '';
+  var sf_VIDEO_ID    = 'bIn2ZNr0jts';
+
 function openSfModal(videoId){
-  const m = document.getElementById('sfModal');
-  sf_formulaData = null; sf_videoTitle = ''; sf_templateRaw = '';
-  document.getElementById('sf_urlInput').value = 'https://www.youtube.com/watch?v=' + videoId;
-  document.getElementById('sf_resultsWrap').classList.remove('show');
-  document.getElementById('sf_genPanel').classList.remove('show');
-  document.getElementById('sf_musicBlock').style.display = 'none';
-  document.getElementById('sf_errorBox').classList.remove('show');
-  m.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => sf_analyzeVideo(), 300);
+  try {
+    const m = document.getElementById('sfModal');
+    if(!m){ console.error('sfModal not found'); return; }
+    sf_formulaData = null; sf_videoTitle = ''; sf_templateRaw = '';
+    document.getElementById('sf_urlInput').value = 'https://www.youtube.com/watch?v=' + videoId;
+    const rw = document.getElementById('sf_resultsWrap');
+    const gp = document.getElementById('sf_genPanel');
+    const mb = document.getElementById('sf_musicBlock');
+    const eb = document.getElementById('sf_errorBox');
+    if(rw) rw.classList.remove('show');
+    if(gp) gp.classList.remove('show');
+    if(mb) mb.style.display = 'none';
+    if(eb) eb.classList.remove('show');
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(function(){ sf_analyzeVideo(); }, 400);
+  } catch(e) { console.error('openSfModal error:', e); }
 }
 function closeSfModal(){
-  document.getElementById('sfModal').style.display = 'none';
+  const m = document.getElementById('sfModal');
+  if(m) m.style.display = 'none';
   document.body.style.overflow = '';
 }
-
-  const sf_VIDEO_ID = 'bIn2ZNr0jts';
-  let sf_formulaData = null;
-  let sf_videoTitle = '';
-  let sf_templateRaw = '';
 
   function sf_extractId(url) {
     const patterns = [
