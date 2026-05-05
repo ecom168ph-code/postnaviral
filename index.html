@@ -2018,10 +2018,22 @@ async function handleSetNewPassword(){
 
   try{
     const res  = await fetch(APPS_SCRIPT_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({action:'resetPassword', email, token, password:p1})
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'resetPassword', email, token, password:p1}),
+      redirect: 'follow'
     });
-    const data = await res.json();
+    const responseText = await res.text();
+    console.log('Reset password response:', responseText);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch(parseErr) {
+      console.error('Parse error:', parseErr, 'Raw:', responseText);
+      showToast('⚠️ Server error. Try ulit!');
+      btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
+      return;
+    }
     if(data.success){
       showToast('✅ Na-update na ang password mo! Mag-login na.');
       // Clean URL
@@ -2032,7 +2044,8 @@ async function handleSetNewPassword(){
       btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
     }
   }catch(e){
-    showToast('⚠️ Error. Try ulit!');
+    console.error('Reset password error:', e);
+    showToast('⚠️ Connection error. Try ulit!');
     btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
   }
 }
