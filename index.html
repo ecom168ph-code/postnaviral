@@ -1184,62 +1184,126 @@ async function searchYouTube(pageToken='') {
 
     const html = await response.text();
 
-    // Parse ytInitialData from YouTube HTML
-    const initialDataMatch = html.match(/var ytInitialData\s*=\s*(\{.+?\});\s*<\/script>/s)
-      || html.match(/ytInitialData\s*=\s*(\{.+?\});/s);
+    // ── MULTI-STRATEGY ytInitialData EXTRACTOR ──
+    // YouTube frequently changes how they embed this JSON.
+    // We try 4 patterns in order of reliability.
+    let initialData = null;
 
-    if (!initialDataMatch) {
-      // YouTube changed HTML structure — show fallback
-      _showYtFallback(isNiche);
-      return;
-    }
+    const patterns = [
+      /var ytInitialData\s*=\s*(\{[\s\S]*?\});\s*<\/script>/,
+      /window\["ytInitialData"\]\s*=\s*(\{[\s\S]*?\});\s*<\/script>/,
+      /ytInitialData\s*=\s*(\{[\s\S]*?\});\s*(?:\/\/|<\/script>)/,
+      /"ytInitialData"\s*,\s*(\{[\s\S]*?\})\s*\)/,
+    ];
 
-    let initialData;
-    try { initialData = JSON.parse(initialDataMatch[1]); }
-    catch(e) { _showYtFallback(isNiche); return; }
-
-    // Extract videos
-    const videos = [];
-    try {
-      const contents =
-        initialData?.contents?.twoColumnSearchResultsRenderer
-          ?.primaryContents?.sectionListRenderer?.contents?.[0]
-          ?.itemSectionRenderer?.contents || [];
-
-      for (const item of contents) {
-        if (!item.videoRenderer) continue;
-        const v = item.videoRenderer;
-        const videoId = v.videoId;
-        if (!videoId) continue;
-
-        const title      = v.title?.runs?.[0]?.text || 'Video';
-        const channel    = v.longBylineText?.runs?.[0]?.text || 'Unknown';
-        const thumbs     = v.thumbnail?.thumbnails || [];
-        const thumbnail  = (thumbs[thumbs.length - 1] || thumbs[0] || {}).url || '';
-        const viewText   = v.viewCountText?.simpleText || v.shortViewCountText?.simpleText || '0';
-        const viewCount  = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
-        const pubText    = v.publishedTimeText?.simpleText || '';
-
-        if (viewCount >= YT_MIN_VIEWS) {
-          const entry = {
-            id: { videoId },
-            snippet: {
-              title,
-              channelTitle: channel,
-              thumbnails: {
-                default: { url: thumbnail },
-                medium:  { url: thumbnail }
-              },
-              publishedAt: new Date().toISOString(),
-              publishedTimeText: pubText
-            },
-            _stats: { viewCount }
-          };
-          videos.push(entry);
-          ytStatsMap[videoId] = { viewCount };
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match) {
+        try {
+          initialData = JSON.parse(match[1]);
+          if (initialData?.contents) break; // valid — stop trying
+        } catch(e) {
+          initialData = null; // try next pattern
         }
       }
-    } catch(parseErr) { console.error('Parse error:', parseErr); }
+    }
+
+    // ── FALLBACK: regex-extract all videoId occurrences from raw HTML ──
+    // Works even when JSON parsing fails completely.
+    const videos = [];
+
+    if (initialData?.contents) {
+      // Standard path — parse from structured JSON
+      try {
+        // Try multiple JSON paths YouTube has used over time
+        const sectionPaths = [
+          initialData?.contents?.twoColumnSearchResultsRenderer
+            ?.primaryContents?.sectionListRenderer?.contents,
+          initialData?.contents?.twoColumnSearchResultsRenderer
+            ?.primaryContents?.richGridRenderer?.contents,
+        ].filter(Boolean);
+
+        for (const sections of sectionPaths) {
+          for (const section of sections) {
+            const items =
+              section?.itemSectionRenderer?.contents ||
+              section?.richItemRenderer ? [section] : [];
+
+            for (const item of items) {
+              const v = item?.videoRenderer
+                || item?.richItemRenderer?.content?.videoRenderer;
+              if (!v?.videoId) continue;
+
+              const videoId   = v.videoId;
+              const title     = v.title?.runs?.[0]?.text
+                             || v.title?.simpleText || 'Video';
+              const channel   = v.longBylineText?.runs?.[0]?.text
+                             || v.ownerText?.runs?.[0]?.text || 'Unknown';
+              const thumbs    = v.thumbnail?.thumbnails || [];
+              const thumbnail = (thumbs[thumbs.length - 1] || thumbs[0] || {}).url
+                             || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+              const viewText  = v.viewCountText?.simpleText
+                             || v.shortViewCountText?.simpleText || '0';
+              const viewCount = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
+              const pubText   = v.publishedTimeText?.simpleText || '';
+
+              if (viewCount >= YT_MIN_VIEWS) {
+                videos.push({
+                  id: { videoId },
+                  snippet: {
+                    title, channelTitle: channel,
+                    thumbnails: {
+                      default: { url: thumbnail },
+                      medium:  { url: thumbnail }
+                    },
+                    publishedAt: new Date().toISOString(),
+                    publishedTimeText: pubText
+                  },
+                  _stats: { viewCount }
+                });
+                ytStatsMap[videoId] = { viewCount };
+              }
+            }
+          }
+        }
+      } catch(parseErr) { console.error('JSON path parse error:', parseErr); }
+    }
+
+    // ── LAST RESORT: extract videoIds directly from HTML with regex ──
+    // Catches videos even when JSON structure is unrecognised.
+    if (videos.length === 0) {
+      console.log('Falling back to regex video extraction...');
+      const idMatches = [...html.matchAll(/"videoId"\s*:\s*"([a-zA-Z0-9_-]{11})"/g)];
+      const titleMatches = [...html.matchAll(/"title"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/g)];
+      const channelMatches = [...html.matchAll(/"longBylineText"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"/g)];
+      const viewMatches = [...html.matchAll(/"viewCountText"\s*:\s*\{"simpleText"\s*:\s*"([^"]+)"/g)];
+
+      const seen = new Set();
+      idMatches.forEach((m, i) => {
+        const videoId = m[1];
+        if (seen.has(videoId)) return;
+        seen.add(videoId);
+
+        const viewText  = viewMatches[i]?.[1] || '0';
+        const viewCount = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
+        if (viewCount < YT_MIN_VIEWS) return;
+
+        const title   = titleMatches[i]?.[1]   || 'Viral Video';
+        const channel = channelMatches[i]?.[1] || 'YouTube';
+        const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+        videos.push({
+          id: { videoId },
+          snippet: {
+            title, channelTitle: channel,
+            thumbnails: { default: { url: thumbnail }, medium: { url: thumbnail } },
+            publishedAt: new Date().toISOString()
+          },
+          _stats: { viewCount }
+        });
+        ytStatsMap[videoId] = { viewCount };
+      });
+    }
 
     if (videos.length === 0) {
       // No 1M+ videos found — try showing any cached results for this query
