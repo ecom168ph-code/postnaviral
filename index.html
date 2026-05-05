@@ -1471,9 +1471,9 @@ function playYtVideo(el){
 }
 
 function quickInspireEl(el){
-  const d=el.dataset;
-  ytCurrentVideoData={videoId:d.vid,title:d.title,channel:d.ch,views:d.views,description:d.desc,publishedAt:d.pub};
-  confirmYtInspiration();
+  const d = el.dataset;
+  if(!d.vid){ console.error('No video data on element'); return; }
+  openSfModal(d.vid);
 }
 
 function quickInspire(videoId,title,channel,views,pub,desc){
@@ -1492,8 +1492,9 @@ document.getElementById('ytPlayerModal').addEventListener('click',function(e){if
 
 function confirmYtInspiration(){
   if(!ytCurrentVideoData) return;
+  const vid = ytCurrentVideoData.videoId;
   closeYtPlayer();
-  openSfModal(ytCurrentVideoData.videoId);
+  openSfModal(vid);
 }
 
 // openSfModal and closeSfModal defined below in modal script block
