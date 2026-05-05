@@ -788,15 +788,28 @@
   }
 
   async function fetchTitle(vid) {
-    try {
-      const r = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json');
-      if (r.ok) { const d = await r.json(); return { title: d.title || 'YouTube Video', author: d.author_name || '' }; }
-    } catch(e) {}
-    return { title: 'YouTube Video', author: '' };
+    // Try multiple oEmbed endpoints
+    const endpoints = [
+      'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + vid + '&format=json',
+      'https://noembed.com/embed?url=https://www.youtube.com/watch?v=' + vid,
+    ];
+    for (const ep of endpoints) {
+      try {
+        const r = await fetch(ep);
+        if (r.ok) {
+          const d = await r.json();
+          const title = d.title || d.name || '';
+          const author = d.author_name || d.provider_name || '';
+          if (title && title !== 'YouTube Video') return { title, author };
+        }
+      } catch(e) {}
+    }
+    // Fallback — use video ID as reference
+    return { title: 'YouTube Video (ID: ' + vid + ')', author: '' };
   }
 
-  const SITE_API_KEY = '';
-  function getApiKey() { return localStorage.getItem('pnv_api_key') || SITE_API_KEY || ''; }
+  const SITE_API_KEY = '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';
+  function getApiKey() { return SITE_API_KEY || localStorage.getItem('pnv_api_key') || ''; }
 
   async function callClaude(systemPrompt, userPrompt) {
     const apiKey = getApiKey();
@@ -853,8 +866,15 @@
     const url = document.getElementById('urlInput').value.trim();
     const errBox = document.getElementById('errorBox');
     errBox.classList.remove('show');
-    const vid = url ? extractId(url) : VIDEO_ID;
-    if (!vid) { errBox.textContent = 'Invalid YouTube URL.'; errBox.classList.add('show'); return; }
+
+    // Detect platform
+    const isTikTok  = url.includes('tiktok.com');
+    const isFB      = url.includes('facebook.com') || url.includes('fb.watch');
+    const isYT      = !isTikTok && !isFB;
+
+    const vid = isYT ? (url ? extractId(url) : VIDEO_ID) : null;
+    if (isYT && !vid) { errBox.textContent = 'Invalid YouTube URL. I-paste ang tamang link.'; errBox.classList.add('show'); return; }
+    if (!url) { errBox.textContent = 'I-paste muna ang video URL.'; errBox.classList.add('show'); return; }
 
     document.getElementById('analyzeBtn').disabled = true;
     document.getElementById('loadingScreen').classList.add('show');
@@ -862,15 +882,57 @@
     document.getElementById('genPanel').classList.remove('show');
     document.getElementById('musicBlock').style.display = 'none';
 
-    document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/' + vid + '?rel=0&modestbranding=1';
-    const meta = await fetchTitle(vid);
-    videoTitle = meta.title;
+    // Embed the video
+    const videoSection = document.getElementById('videoFrame').parentElement;
+    if (isYT) {
+      document.getElementById('videoFrame').src = 'https://www.youtube.com/embed/' + vid + '?rel=0&modestbranding=1';
+      document.getElementById('videoFrame').style.display = 'block';
+    } else if (isTikTok) {
+      const ttId = (url.match(/\/video\/(\d+)/) || [])[1] || '0';
+      document.getElementById('videoFrame').style.display = 'none';
+      let ttWrap = document.getElementById('ttEmbedHolder');
+      if (!ttWrap) { ttWrap = document.createElement('div'); ttWrap.id = 'ttEmbedHolder'; videoSection.appendChild(ttWrap); }
+      ttWrap.innerHTML = '<blockquote class="tiktok-embed" cite="' + url + '" data-video-id="' + ttId + '" style="max-width:325px;min-width:325px;border:none;margin:0 auto"></blockquote>';
+      const s = document.createElement('script'); s.src = 'https://www.tiktok.com/embed.js'; s.async = true; document.body.appendChild(s);
+    } else if (isFB) {
+      document.getElementById('videoFrame').style.display = 'none';
+      let fbWrap = document.getElementById('fbEmbedHolder');
+      if (!fbWrap) { fbWrap = document.createElement('div'); fbWrap.id = 'fbEmbedHolder'; videoSection.appendChild(fbWrap); }
+      fbWrap.innerHTML = '<div class="fb-video" data-href="' + url + '" data-width="400" data-show-text="false"></div>';
+      if (window.FB) window.FB.XFBML.parse(fbWrap);
+    }
+
+    // Get title/meta
+    let meta = { title: '', author: '' };
+    if (isYT) {
+      meta = await fetchTitle(vid);
+    } else if (isTikTok) {
+      try {
+        const oe = await fetch('https://www.tiktok.com/oembed?url=' + encodeURIComponent(url));
+        const od = await oe.json();
+        meta = { title: od.title || 'TikTok Video', author: od.author_name || '' };
+      } catch(e) { meta = { title: 'TikTok Video', author: '' }; }
+    } else if (isFB) {
+      meta = { title: 'Facebook Reel/Video', author: 'Facebook Creator' };
+    }
+
+    videoTitle = meta.title || (isTikTok ? 'TikTok Video' : isFB ? 'Facebook Reel' : 'YouTube Video');
     document.getElementById('vidTitle').textContent = videoTitle;
     document.getElementById('vidChannel').textContent = meta.author ? 'by ' + meta.author : '';
 
-    const sysPrompt = 'You are a viral content strategist. Return ONLY a raw JSON object, no markdown, no backticks, no extra text. Use this exact structure: {"intro":"one punchy sentence max 15 words","hookAnalysis":"why the hook works psychologically max 40 words","emotionAnalysis":"what emotion it triggers and why people share max 40 words","emotionTags":["Tag1","Tag2","Tag3"],"templateExplain":"describe the content structure in max 15 words","template":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION].","templateRaw":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION]."}';
+    const platform = isTikTok ? 'TikTok' : isFB ? 'Facebook Reels' : 'YouTube';
 
-    const userPrompt = 'Decode the viral formula of this YouTube video. Title: "' + videoTitle + '". Channel: ' + meta.author + '. Analyze the psychological triggers and create a Taglish-friendly content template.';
+    const sysPrompt = 'You are a viral content strategist for Filipino creators. Return ONLY a raw JSON object, no markdown, no backticks, no extra text. Use this exact structure: {"intro":"one punchy sentence max 15 words","hookAnalysis":"why the hook works psychologically max 40 words","emotionAnalysis":"what emotion it triggers and why people share max 40 words","emotionTags":["Tag1","Tag2","Tag3"],"templateExplain":"describe the content structure in max 15 words","template":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION].","templateRaw":"Hook: [HOOK LINE]. Body: [MAIN POINT 1]. [MAIN POINT 2]. Twist: [UNEXPECTED ANGLE]. CTA: [CALL TO ACTION]."}';
+
+    // Build a richer prompt with video URL for context
+    const userPrompt = 'Decode the viral formula of this ' + platform + ' video.\n\n'
+      + 'Video URL: ' + url + '\n'
+      + 'Title: "' + videoTitle + '"\n'
+      + 'Creator/Channel: ' + (meta.author || 'Unknown') + '\n'
+      + 'Platform: ' + platform + '\n\n'
+      + 'Based on the title and platform, analyze: what psychological hook does this use? What emotion does it trigger? Why would Filipino viewers share this?\n'
+      + 'Create a Taglish plug-and-play template na pwedeng gamitin ng Filipino content creators para sa kanilang niche.\n'
+      + 'Be specific — kung may makita kang pattern sa title (hugot, storytime, tips, challenge, etc.), i-decode yun.';
 
     try {
       const json = await callClaude(sysPrompt, userPrompt);

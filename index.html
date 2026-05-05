@@ -956,7 +956,7 @@ function formulaPanel(videoId, platform){
     +'<div class="vd-formula-label">📋 PLUG-AND-PLAY TEMPLATE (COPYABLE)</div>'
     +'<div class="vd-template">'+tplHtml+'</div>'
     +'</div>'
-    +'<button class="vd-use-btn" onclick="vdUseFormula(\''+vid+'\',\''+plt+'\')">🚀 USE THIS FORMULA →</button>';
+    +'<button class="vd-use-btn" onclick="window.open(\'steal-formula.html?v=\'+encodeURIComponent(\''+vid+'\'),\'_blank\')">🚀 USE THIS FORMULA →</button>';
 }
 
 // ── TAB SWITCHER ──
@@ -1147,16 +1147,17 @@ function vdClosePlayer(){
 function vdStealFromPlayer(){
   const vid=vdCurrentVideoId;
   vdClosePlayer();
-  openSfModal(vid);
+  window.open('steal-formula.html?v=' + encodeURIComponent('https://www.youtube.com/watch?v='+vid), '_blank');
 }
 document.addEventListener('DOMContentLoaded',function(){
   const pm=document.getElementById('vdPlayerModal');
   if(pm) pm.addEventListener('click',function(e){if(e.target===this)vdClosePlayer();});
 });
 
-// ── USE FORMULA (opens Steal Formula AI) ──
+// ── USE FORMULA (opens steal-formula.html as separate page) ──
 function vdUseFormula(videoIdOrUrl, platform){
-  openSfModal(videoIdOrUrl);
+  const url = 'steal-formula.html?v=' + encodeURIComponent(videoIdOrUrl);
+  window.open(url, '_blank');
 }
 
 // ── TIKTOK EMBED ──
