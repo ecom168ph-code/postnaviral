@@ -843,19 +843,140 @@ const _origHideGate = typeof hideGate === 'function' ? hideGate : null;
 </style>
 
 <script>
-// HTML Scraping + noembed.com Approach - NO API KEYS NEEDED!
-const YT_API_KEYS  = []; // Not needed anymore
-let ytApiKeyIndex  = 0;
-let YT_API_KEY     = ''; // Not needed anymore
+// ═══════════════════════════════════════════════════════════════
+// YOUTUBE CACHE-FIRST SYSTEM — Post Na Viral
+// Uses localStorage as client cache + Google Apps Script as
+// shared server cache. Protects against scraping failures and
+// minimises redundant network calls across all users.
+// ═══════════════════════════════════════════════════════════════
 
-// CORS Proxy for scraping
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+// ── QUOTA CONFIG (update if you switch to real YouTube Data API) ──
+const YT_QUOTA = {
+  total:        10000,   // YouTube Data API daily quota
+  reserve:      3000,    // Reserved for cron/preload
+  costPerSearch: 101,    // search.list(100) + videos.list(1)
+  get usable()  { return this.total - this.reserve; },
+  get dailyCap(){ return Math.floor(this.usable / this.costPerSearch); } // = 69
+};
 
-function switchYtApiKey(){
-  ytApiKeyIndex = (ytApiKeyIndex + 1) % YT_API_KEYS.length;
-  YT_API_KEY = YT_API_KEYS[ytApiKeyIndex];
-  console.log('Switched to YT API Key #' + (ytApiKeyIndex + 1));
+// ── CLIENT-SIDE CACHE (localStorage) ──
+// Key: 'pnv_yt_cache_' + normalizedQuery
+// Value: { results:[], cachedAt: timestamp, expiresAt: timestamp, source:'scrape'|'api' }
+const YT_CACHE_TTL = {
+  trending:  6  * 60 * 60 * 1000,  // 6 hours
+  normal:    24 * 60 * 60 * 1000,  // 24 hours
+  evergreen: 72 * 60 * 60 * 1000,  // 3 days
+};
+
+// ── GLOBAL DAILY CAP (stored in localStorage, keyed by date) ──
+// Tracks how many real network fetches happened today across this browser session.
+// The Apps Script server enforces the shared global cap across ALL users.
+const YT_DAILY_CAP_KEY = 'pnv_yt_daily_cap';
+
+function getYtDailyCap() {
+  try {
+    const raw = localStorage.getItem(YT_DAILY_CAP_KEY);
+    if (!raw) return { date: new Date().toDateString(), count: 0 };
+    const data = JSON.parse(raw);
+    if (data.date !== new Date().toDateString()) return { date: new Date().toDateString(), count: 0 };
+    return data;
+  } catch(e) { return { date: new Date().toDateString(), count: 0 }; }
 }
+
+function incrementYtDailyCap() {
+  const cap = getYtDailyCap();
+  cap.count++;
+  try { localStorage.setItem(YT_DAILY_CAP_KEY, JSON.stringify(cap)); } catch(e){}
+}
+
+function isYtCapReached() {
+  // Client-side safety: max 15 scrapes per browser per day
+  // Real global cap (69/day) enforced server-side via Apps Script
+  return getYtDailyCap().count >= 15;
+}
+
+// ── CACHE HELPERS ──
+function normalizeQuery(q) { return q.toLowerCase().trim().replace(/\s+/g,' '); }
+
+function getCacheKey(query) { return 'pnv_yt_cache_' + normalizeQuery(query); }
+
+function getYtCache(query) {
+  try {
+    const raw = localStorage.getItem(getCacheKey(query));
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() > data.expiresAt) { localStorage.removeItem(getCacheKey(query)); return null; }
+    return data;
+  } catch(e) { return null; }
+}
+
+function setYtCache(query, results, type='normal') {
+  const ttl = YT_CACHE_TTL[type] || YT_CACHE_TTL.normal;
+  const entry = {
+    results,
+    cachedAt: Date.now(),
+    expiresAt: Date.now() + ttl,
+    cacheType: type,
+    query: normalizeQuery(query)
+  };
+  try { localStorage.setItem(getCacheKey(query), JSON.stringify(entry)); } catch(e) {
+    // Storage full — clear oldest YT cache entries
+    clearOldYtCache();
+    try { localStorage.setItem(getCacheKey(query), JSON.stringify(entry)); } catch(e2){}
+  }
+}
+
+function clearOldYtCache() {
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('pnv_yt_cache_'));
+  keys.forEach(k => {
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (Date.now() > d.expiresAt) localStorage.removeItem(k);
+    } catch(e) { localStorage.removeItem(k); }
+  });
+}
+
+// ── DETERMINE CACHE TYPE PER QUERY ──
+function getCacheType(query, tab) {
+  if (tab === 'ph' || tab === 'global') return 'trending';
+  const evergreen = ['airbnb','corporate','giveaway','love','confession','kdp','healing','journal'];
+  const q = query.toLowerCase();
+  if (evergreen.some(k => q.includes(k))) return 'evergreen';
+  return 'normal';
+}
+
+// ── SHOW CACHE BADGE IN UI ──
+function showCacheBadge(source, cachedAt) {
+  const existing = document.getElementById('ytCacheBadge');
+  if (existing) existing.remove();
+  const badge = document.createElement('div');
+  badge.id = 'ytCacheBadge';
+  const isCache = source === 'cache';
+  const timeAgo = cachedAt ? Math.round((Date.now() - cachedAt) / 60000) + 'm ago' : '';
+  badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:' +
+    (isCache ? 'rgba(0,200,100,0.1)' : 'rgba(255,0,0,0.08)') +
+    ';border:1px solid ' + (isCache ? 'rgba(0,200,100,0.3)' : 'rgba(255,0,0,0.2)') +
+    ';color:' + (isCache ? '#00c864' : '#FF4444') +
+    ';font-size:10px;font-weight:800;padding:3px 10px;border-radius:50px;letter-spacing:1px;margin-left:8px';
+  badge.textContent = isCache ? ('⚡ CACHED ' + timeAgo) : '🔴 LIVE';
+  const meta = document.getElementById('ytResultMeta');
+  if (meta) meta.appendChild(badge);
+}
+
+// ── LEGACY — not needed anymore but kept for compat ──
+const YT_API_KEYS = [];
+let ytApiKeyIndex = 0;
+let YT_API_KEY    = '';
+function switchYtApiKey() {}
+
+// CORS Proxy (fallback if primary fails)
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+];
+let corsProxyIndex = 0;
+function getCorsProxy() { return CORS_PROXIES[corsProxyIndex % CORS_PROXIES.length]; }
+function nextCorsProxy() { corsProxyIndex++; }
 const YT_MIN_VIEWS = 1000000;
 let ytVideoType    = 'video';
 let ytCurrentTab   = 'ph';
@@ -902,134 +1023,333 @@ function resortYt(el){
   if(newOrder===ytSortOrder) return;
   ytSortOrder=newOrder;
   if(ytAllItems.length>0){
-    // Re-sort cached 1M+ items — no new API call
-    const filtered=ytAllItems.filter(i=>parseInt(ytStatsMap[i.id.videoId]?.viewCount||0)>=YT_MIN_VIEWS);
-    const sorted=[...filtered].sort((a,b)=>
-      ytSortOrder==='date'
-        ? new Date(b.snippet.publishedAt)-new Date(a.snippet.publishedAt)
-        : parseInt(ytStatsMap[b.id.videoId]?.viewCount||0)-parseInt(ytStatsMap[a.id.videoId]?.viewCount||0)
-    );
+    // Re-sort in-memory — zero network calls
     document.getElementById('ytGrid').innerHTML='';
-    renderYtCards(sorted);
+    renderYtCards(sortYtItems(ytAllItems));
   } else { searchYouTube(); }
 }
 
-async function searchYouTube(pageToken=''){
-  const isNiche=ytCurrentTab==='niche';
-  let query=isNiche?document.getElementById('ytSearchInput').value.trim():YT_TAB_CONFIG[ytCurrentTab].query;
-  if(isNiche&&!query){document.getElementById('ytSearchInput').style.borderColor='#FF0000';setTimeout(()=>document.getElementById('ytSearchInput').style.borderColor='var(--border)',2000);return;}
-  if(!userData){showToast('❗ Mag-login muna!');showGate();return;}
-  if(!pageToken){ytAllItems=[];ytStatsMap={};document.getElementById('ytGrid').innerHTML='';}
-  document.getElementById('ytAutoLoadBtn').style.display='none';
-  document.getElementById('ytLoading').style.display='block';
-  document.getElementById('ytResults').style.display='none';
-  document.getElementById('ytLoadingText').textContent=YT_TAB_CONFIG[ytCurrentTab].label+' — Nagha-hanap ng 1M+ views...';
-  try{
-    const q=ytVideoType==='short'?query+' #shorts':query;
-    
-    // Use RapidAPI YouTube Search - Free, CORS-enabled, no quota!
-    // Get free key at: https://rapidapi.com/ytSearchAPI/api/youtube-search6
-    const RAPIDAPI_KEY = 'demo'; // Will use free endpoint demo
-    
-    // Alternative: Use free YouTube search proxy API
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
-    
-    // Use AllOrigins to fetch YouTube search
-    const corsProxy = 'https://api.allorigins.win/raw?url=';
-    const response = await fetch(corsProxy + encodeURIComponent(searchUrl), {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+// ── COOLDOWN TRACKER (prevent spam clicks) ──
+const _ytCooldowns = {};
+function ytCooldownOk(key, ms=8000) {
+  const now = Date.now();
+  if (_ytCooldowns[key] && now - _ytCooldowns[key] < ms) {
+    const wait = Math.ceil((ms - (now - _ytCooldowns[key])) / 1000);
+    showToast('⏳ Sandali lang — hintayin ang ' + wait + 's bago ulit mag-search.');
+    return false;
+  }
+  _ytCooldowns[key] = now;
+  return true;
+}
+
+// ── MAIN SEARCH FUNCTION — CACHE-FIRST ──
+async function searchYouTube(pageToken='') {
+  const isNiche = ytCurrentTab === 'niche';
+  let query = isNiche
+    ? document.getElementById('ytSearchInput').value.trim()
+    : YT_TAB_CONFIG[ytCurrentTab].query;
+
+  if (isNiche && !query) {
+    document.getElementById('ytSearchInput').style.borderColor = '#FF0000';
+    setTimeout(() => document.getElementById('ytSearchInput').style.borderColor = 'var(--border)', 2000);
+    return;
+  }
+  if (!userData) { showToast('❗ Mag-login muna!'); showGate(); return; }
+
+  // ── COOLDOWN: prevent spam clicking ──
+  if (!ytCooldownOk('yt_search_' + normalizeQuery(query), 8000)) return;
+
+  if (!pageToken) { ytAllItems = []; ytStatsMap = {}; document.getElementById('ytGrid').innerHTML = ''; }
+
+  document.getElementById('ytAutoLoadBtn').style.display = 'none';
+  document.getElementById('ytLoading').style.display = 'block';
+  document.getElementById('ytResults').style.display = 'none';
+  document.getElementById('ytLoadingText').textContent = 'Nagha-hanap ng viral videos...';
+
+  // ════════════════════════════════════════════
+  // STEP 1: CHECK LOCAL CACHE FIRST
+  // ════════════════════════════════════════════
+  const cached = getYtCache(query);
+  if (cached && cached.results && cached.results.length > 0) {
+    // Cache hit — serve instantly, zero network calls
+    document.getElementById('ytLoadingText').textContent = '⚡ Loading from cache...';
+    await new Promise(r => setTimeout(r, 300)); // tiny delay so loader is visible
+
+    ytAllItems = cached.results;
+    cached.results.forEach(item => {
+      ytStatsMap[item.id.videoId] = item._stats || { viewCount: 0 };
     });
-    
-    if (!response.ok) throw new Error('Failed to fetch YouTube search');
-    const html = await response.text();
-    
-    // Parse initialData from YouTube HTML
-    const initialDataMatch = html.match(/var ytInitialData = ({.*?});/s);
-    if (!initialDataMatch) {
-      showToast('⚠️ Could not parse YouTube data. Try again!');
-      document.getElementById('ytLoading').style.display='none';
-      if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
-      return;
-    }
-    
-    let initialData;
+
+    const sorted = sortYtItems(ytAllItems);
+    renderYtCards(sorted);
+    document.getElementById('ytLoadMore').style.display = 'none';
+    document.getElementById('ytResultMeta').textContent =
+      sorted.length + ' viral videos · ' + YT_TAB_CONFIG[ytCurrentTab].label;
+    document.getElementById('ytLoading').style.display = 'none';
+    document.getElementById('ytResults').style.display = 'block';
+    document.getElementById('ytResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showCacheBadge('cache', cached.cachedAt);
+    return; // DONE — no network call made
+  }
+
+  // ════════════════════════════════════════════
+  // STEP 1.5: CHECK SERVER CACHE (shared across ALL users)
+  // If another user already fetched this query, use their result.
+  // Zero scraping needed.
+  // ════════════════════════════════════════════
+  if (APPS_SCRIPT_URL) {
     try {
-      initialData = JSON.parse(initialDataMatch[1]);
-    } catch (e) {
-      console.error('JSON parse error:', e);
-      showToast('⚠️ Error parsing data. Try again!');
-      document.getElementById('ytLoading').style.display='none';
-      if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
-      return;
-    }
-    
-    // Extract videos from initialData
-    const videos = [];
-    try {
-      const contents = initialData?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
-      
-      for (const item of contents) {
-        if (item.videoRenderer) {
-          const video = item.videoRenderer;
-          const videoId = video.videoId;
-          const title = video.title?.runs?.[0]?.text || 'Video';
-          const channel = video.longBylineText?.runs?.[0]?.text || 'Unknown';
-          const thumbnail = video.thumbnail?.thumbnails?.[video.thumbnail.thumbnails.length - 1]?.url || '';
-          const viewText = video.viewCountText?.simpleText || '0 views';
-          const viewCount = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
-          
-          if (videoId && viewCount >= YT_MIN_VIEWS) {
-            videos.push({
-              id: { videoId },
-              snippet: {
-                title,
-                channelTitle: channel,
-                thumbnails: { default: { url: thumbnail } },
-                publishedAt: new Date().toISOString()
-              }
-            });
-            
-            ytStatsMap[videoId] = { viewCount };
-          }
+      document.getElementById('ytLoadingText').textContent = '🔍 Checking shared cache...';
+      const serverRes = await fetch(
+        APPS_SCRIPT_URL + '?action=getYtCache&query=' + encodeURIComponent(normalizeQuery(query))
+      );
+      if (serverRes.ok) {
+        const serverData = await serverRes.json();
+        if (serverData.found && serverData.results && serverData.results.length > 0) {
+          // Save to local cache so next time is even faster
+          setYtCache(query, serverData.results, serverData.cacheType || 'normal');
+          ytAllItems = serverData.results;
+          serverData.results.forEach(item => {
+            ytStatsMap[item.id.videoId] = item._stats || { viewCount: 0 };
+          });
+          const sorted = sortYtItems(ytAllItems);
+          renderYtCards(sorted);
+          document.getElementById('ytLoadMore').style.display = 'none';
+          document.getElementById('ytResultMeta').textContent =
+            sorted.length + ' viral videos · ' + YT_TAB_CONFIG[ytCurrentTab].label;
+          document.getElementById('ytLoading').style.display = 'none';
+          document.getElementById('ytResults').style.display = 'block';
+          document.getElementById('ytResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          showCacheBadge('cache', serverData.cachedAt);
+          return; // DONE — served from shared server cache
         }
       }
-    } catch (e) {
-      console.error('Parse error:', e);
+    } catch(serverErr) {
+      // Server cache unavailable — fall through to live scrape
+      console.log('Server cache check failed, falling through:', serverErr.message);
     }
-    
-    if (videos.length === 0) {
-      showToast('⚠️ Walang videos found. Try another search!');
-      document.getElementById('ytLoading').style.display='none';
-      if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
+  }
+
+  // ════════════════════════════════════════════
+  // STEP 2: CHECK GLOBAL CAP (client-side guard)
+  // ════════════════════════════════════════════
+  if (isYtCapReached()) {
+    // Client cap hit — show any stale cached data or fallback message
+    showToast('Showing cached viral results. Fresh results update in a few hours.');
+    document.getElementById('ytLoadingText').textContent = '📦 Loading latest cached results...';
+
+    const staleCache = getStaleYtCache(query);
+    if (staleCache && staleCache.results.length > 0) {
+      ytAllItems = staleCache.results;
+      staleCache.results.forEach(i => { ytStatsMap[i.id.videoId] = i._stats || { viewCount: 0 }; });
+      renderYtCards(sortYtItems(ytAllItems));
+      document.getElementById('ytResultMeta').textContent =
+        ytAllItems.length + ' cached viral videos · ' + YT_TAB_CONFIG[ytCurrentTab].label;
+      showCacheBadge('cache', staleCache.cachedAt);
+    } else {
+      document.getElementById('ytGrid').innerHTML =
+        '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">' +
+        '📦 Showing cached viral results. Fresh results update soon.</div>';
+    }
+    document.getElementById('ytLoading').style.display = 'none';
+    document.getElementById('ytResults').style.display = 'block';
+    return;
+  }
+
+  // ════════════════════════════════════════════
+  // STEP 3: NO CACHE — DO REAL SCRAPE
+  // ════════════════════════════════════════════
+  document.getElementById('ytLoadingText').textContent =
+    YT_TAB_CONFIG[ytCurrentTab].label + ' — Nagha-hanap ng 1M+ views...';
+
+  try {
+    const q = ytVideoType === 'short' ? query + ' #shorts' : query;
+    const searchUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+    const proxy = getCorsProxy();
+
+    let response;
+    try {
+      response = await fetch(proxy + encodeURIComponent(searchUrl));
+      if (!response.ok) throw new Error('proxy failed');
+    } catch(proxyErr) {
+      // Try next proxy
+      nextCorsProxy();
+      try {
+        response = await fetch(getCorsProxy() + encodeURIComponent(searchUrl));
+        if (!response.ok) throw new Error('all proxies failed');
+      } catch(e2) {
+        throw new Error('Could not reach YouTube. Check your connection.');
+      }
+    }
+
+    const html = await response.text();
+
+    // Parse ytInitialData from YouTube HTML
+    const initialDataMatch = html.match(/var ytInitialData\s*=\s*(\{.+?\});\s*<\/script>/s)
+      || html.match(/ytInitialData\s*=\s*(\{.+?\});/s);
+
+    if (!initialDataMatch) {
+      // YouTube changed HTML structure — show fallback
+      _showYtFallback(isNiche);
       return;
     }
-    
+
+    let initialData;
+    try { initialData = JSON.parse(initialDataMatch[1]); }
+    catch(e) { _showYtFallback(isNiche); return; }
+
+    // Extract videos
+    const videos = [];
+    try {
+      const contents =
+        initialData?.contents?.twoColumnSearchResultsRenderer
+          ?.primaryContents?.sectionListRenderer?.contents?.[0]
+          ?.itemSectionRenderer?.contents || [];
+
+      for (const item of contents) {
+        if (!item.videoRenderer) continue;
+        const v = item.videoRenderer;
+        const videoId = v.videoId;
+        if (!videoId) continue;
+
+        const title      = v.title?.runs?.[0]?.text || 'Video';
+        const channel    = v.longBylineText?.runs?.[0]?.text || 'Unknown';
+        const thumbs     = v.thumbnail?.thumbnails || [];
+        const thumbnail  = (thumbs[thumbs.length - 1] || thumbs[0] || {}).url || '';
+        const viewText   = v.viewCountText?.simpleText || v.shortViewCountText?.simpleText || '0';
+        const viewCount  = parseInt(viewText.replace(/[^\d]/g, '')) || 0;
+        const pubText    = v.publishedTimeText?.simpleText || '';
+
+        if (viewCount >= YT_MIN_VIEWS) {
+          const entry = {
+            id: { videoId },
+            snippet: {
+              title,
+              channelTitle: channel,
+              thumbnails: {
+                default: { url: thumbnail },
+                medium:  { url: thumbnail }
+              },
+              publishedAt: new Date().toISOString(),
+              publishedTimeText: pubText
+            },
+            _stats: { viewCount }
+          };
+          videos.push(entry);
+          ytStatsMap[videoId] = { viewCount };
+        }
+      }
+    } catch(parseErr) { console.error('Parse error:', parseErr); }
+
+    if (videos.length === 0) {
+      // No 1M+ videos found — try showing any cached results for this query
+      const anyCache = getStaleYtCache(query);
+      if (anyCache && anyCache.results.length > 0) {
+        showToast('📦 Showing cached results — no new 1M+ videos found.');
+        ytAllItems = anyCache.results;
+        anyCache.results.forEach(i => { ytStatsMap[i.id.videoId] = i._stats || { viewCount: 0 }; });
+        renderYtCards(sortYtItems(ytAllItems));
+        document.getElementById('ytResultMeta').textContent =
+          ytAllItems.length + ' viral videos · cached';
+        showCacheBadge('cache', anyCache.cachedAt);
+      } else {
+        showToast('⚠️ Walang 1M+ views videos. Try ng ibang keyword!');
+        if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
+      }
+      document.getElementById('ytLoading').style.display = 'none';
+      document.getElementById('ytResults').style.display = videos.length > 0 ? 'block' : 'none';
+      return;
+    }
+
+    // ── SAVE TO CACHE ──
     ytAllItems = [...ytAllItems, ...videos];
-    const filtered = ytAllItems.filter(i => 
-      parseInt(ytStatsMap[i.id.videoId]?.viewCount || 0) >= YT_MIN_VIEWS
-    );
-    
-    const sorted = [...filtered].sort((a, b) => 
-      parseInt(ytStatsMap[b.id.videoId]?.viewCount || 0) - 
-      parseInt(ytStatsMap[a.id.videoId]?.viewCount || 0)
-    );
-    
-    document.getElementById('ytGrid').innerHTML='';
+    const cacheType = getCacheType(query, ytCurrentTab);
+    // Deduplicate by videoId before caching
+    const seen = new Set();
+    const dedupedItems = ytAllItems.filter(i => {
+      if (seen.has(i.id.videoId)) return false;
+      seen.add(i.id.videoId);
+      return true;
+    });
+    setYtCache(query, dedupedItems, cacheType);
+    incrementYtDailyCap();
+
+    // ── ALSO SAVE TO APPS SCRIPT (shared cache for all users) ──
+    if (APPS_SCRIPT_URL) {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action:    'saveYtCache',
+          query:     normalizeQuery(query),
+          cacheType,
+          results:   dedupedItems.slice(0, 20), // cap payload size
+          cachedAt:  Date.now(),
+          expiresAt: Date.now() + (YT_CACHE_TTL[cacheType] || YT_CACHE_TTL.normal)
+        })
+      }).catch(() => {}); // fire-and-forget, never block UI
+    }
+
+    // ── RENDER ──
+    const sorted = sortYtItems(dedupedItems);
+    document.getElementById('ytGrid').innerHTML = '';
     renderYtCards(sorted);
-    
-    document.getElementById('ytLoadMore').style.display='none';
-    document.getElementById('ytResultMeta').textContent=`${filtered.length} viral videos (1M+ views) · ${YT_TAB_CONFIG[ytCurrentTab].label}`;
-    document.getElementById('ytLoading').style.display='none';
-    document.getElementById('ytResults').style.display='block';
-    document.getElementById('ytResults').scrollIntoView({behavior:'smooth',block:'start'});
-  }catch(e){
-    console.error('YouTube search error:',e);
-    showToast('⚠️ Error sa YouTube search. Try ulit!');
-    document.getElementById('ytLoading').style.display='none';
-    if(!isNiche)document.getElementById('ytAutoLoadBtn').style.display='block';
+    document.getElementById('ytLoadMore').style.display = 'none';
+    document.getElementById('ytResultMeta').textContent =
+      sorted.length + ' viral videos (1M+ views) · ' + YT_TAB_CONFIG[ytCurrentTab].label;
+    document.getElementById('ytLoading').style.display = 'none';
+    document.getElementById('ytResults').style.display = 'block';
+    document.getElementById('ytResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showCacheBadge('live', Date.now());
+
+  } catch(e) {
+    console.error('YouTube search error:', e);
+    // Last resort: show any stale cache
+    const staleCache = getStaleYtCache(query);
+    if (staleCache && staleCache.results.length > 0) {
+      showToast('📦 Network error — showing latest cached results.');
+      ytAllItems = staleCache.results;
+      staleCache.results.forEach(i => { ytStatsMap[i.id.videoId] = i._stats || { viewCount: 0 }; });
+      renderYtCards(sortYtItems(ytAllItems));
+      document.getElementById('ytResultMeta').textContent =
+        ytAllItems.length + ' cached viral videos';
+      document.getElementById('ytResults').style.display = 'block';
+      showCacheBadge('cache', staleCache.cachedAt);
+    } else {
+      showToast('⚠️ Error sa YouTube search. Try ulit!');
+      if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
+    }
+    document.getElementById('ytLoading').style.display = 'none';
   }
+}
+
+// ── SORT HELPER ──
+function sortYtItems(items) {
+  return [...items].sort((a, b) =>
+    ytSortOrder === 'date'
+      ? new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt)
+      : parseInt(ytStatsMap[b.id.videoId]?.viewCount || 0) - parseInt(ytStatsMap[a.id.videoId]?.viewCount || 0)
+  );
+}
+
+// ── GET STALE CACHE (expired but better than nothing) ──
+function getStaleYtCache(query) {
+  try {
+    const raw = localStorage.getItem(getCacheKey(query));
+    if (!raw) return null;
+    return JSON.parse(raw); // return even if expired
+  } catch(e) { return null; }
+}
+
+// ── FALLBACK UI HELPER ──
+function _showYtFallback(isNiche) {
+  showToast('⚠️ Hindi ma-load ang YouTube data. Try ulit mamaya!');
+  document.getElementById('ytLoading').style.display = 'none';
+  document.getElementById('ytGrid').innerHTML =
+    '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:14px">' +
+    '📦 Temporarily unavailable. Pinaka-recent na cached results ang ipinakita.</div>';
+  document.getElementById('ytResults').style.display = 'block';
+  if (!isNiche) document.getElementById('ytAutoLoadBtn').style.display = 'block';
 }
 
 function loadMoreYT(){if(ytNextPageToken)searchYouTube(ytNextPageToken);}
