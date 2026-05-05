@@ -849,6 +849,7 @@ const YT_API_KEYS  = [
 ];
 let ytApiKeyIndex  = 0;
 let YT_API_KEY     = YT_API_KEYS[0];
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 function switchYtApiKey(){
   ytApiKeyIndex = (ytApiKeyIndex + 1) % YT_API_KEYS.length;
@@ -929,7 +930,11 @@ async function searchYouTube(pageToken=''){
       order:ytSortOrder==='date'?'date':'relevance',
       ...(ytCurrentTab==='ph'&&{regionCode:'PH',relevanceLanguage:'tl'}),
       key:YT_API_KEY,...(pageToken&&{pageToken})});
-    const res=await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+    const apiUrl = `https://www.googleapis.com/youtube/v3/search?${params}`;
+    const res=await fetch(CORS_PROXY + encodeURIComponent(apiUrl), {
+      method: 'GET',
+      headers: {'Accept': 'application/json'}
+    });
     const data=await res.json();
     if(data.error){
       // Auto-switch to next API key if quota exceeded
@@ -949,7 +954,11 @@ async function searchYouTube(pageToken=''){
     }
     const ids=(data.items||[]).map(i=>i.id.videoId).filter(Boolean).join(',');
     if(ids){
-      const sr=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_API_KEY}`);
+      const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_API_KEY}`;
+      const sr=await fetch(CORS_PROXY + encodeURIComponent(statsUrl), {
+        method: 'GET',
+        headers: {'Accept': 'application/json'}
+      });
       const sd=await sr.json();
       (sd.items||[]).forEach(v=>ytStatsMap[v.id]=v.statistics);
     }
@@ -2018,22 +2027,10 @@ async function handleSetNewPassword(){
 
   try{
     const res  = await fetch(APPS_SCRIPT_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'resetPassword', email, token, password:p1}),
-      redirect: 'follow'
+      method:'POST', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'resetPassword', email, token, password:p1})
     });
-    const responseText = await res.text();
-    console.log('Reset password response:', responseText);
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch(parseErr) {
-      console.error('Parse error:', parseErr, 'Raw:', responseText);
-      showToast('⚠️ Server error. Try ulit!');
-      btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
-      return;
-    }
+    const data = await res.json();
     if(data.success){
       showToast('✅ Na-update na ang password mo! Mag-login na.');
       // Clean URL
@@ -2044,8 +2041,7 @@ async function handleSetNewPassword(){
       btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
     }
   }catch(e){
-    console.error('Reset password error:', e);
-    showToast('⚠️ Connection error. Try ulit!');
+    showToast('⚠️ Error. Try ulit!');
     btn.disabled=false; btn.textContent='✅ I-SAVE ANG PASSWORD →';
   }
 }
